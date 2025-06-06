@@ -911,6 +911,7 @@
         }
 
         const data = await response.json();
+        console.log('Start enrollment response:', data);
 
         if (data.videoConfig && data.videoConfig.currentSection) {
           startButton.style.display = 'none';
@@ -932,7 +933,22 @@
             data.videoConfig.currentSection.description
           );
         } else {
-          throw new Error('Invalid video configuration received');
+          // Fallback if server doesn't return expected format
+          console.log('Using fallback video URLs');
+          startButton.style.display = 'none';
+          agreeButton.style.display = 'inline-block';
+          questionButton.style.display = 'inline-block';
+          agreeButton.disabled = true;
+          questionButton.disabled = false;
+
+          progressContainer.style.display = 'block';
+          updateProgress(0, 1, 6);
+
+          loadVideo(
+            'https://youtu.be/EKxdPl-Ld0c',
+            'Part 1: Terms & Conditions',
+            'Part 1 of Achieve Test Prep terms and conditions'
+          );
         }
       } catch (err) {
         console.error('Error starting enrollment:', err);
@@ -1021,6 +1037,41 @@
     function handleSuccessfulResponse(data) {
       console.log('Server response:', data);
       
+      // Check if we have a videoConfig object (alternative response format)
+      if (data.videoConfig && data.videoConfig.currentSection) {
+        console.log('Found videoConfig format response');
+        
+        // Update section number if provided
+        if (data.videoConfig.currentSection.section !== undefined) {
+          currentSection = data.videoConfig.currentSection.section;
+        }
+        
+        // Update progress
+        updateProgress(
+          data.videoConfig.completionPercentage || Math.round((currentSection + 1) / 6 * 100),
+          currentSection + 1,
+          data.videoConfig.totalSections || 6
+        );
+        
+        // Load the next video
+        setTimeout(() => {
+          loadVideo(
+            data.videoConfig.currentSection.videoUrl,
+            data.videoConfig.currentSection.title,
+            data.videoConfig.currentSection.description
+          );
+          
+          // Reset button text and states
+          agreeButton.textContent = 'I Agree';
+          questionButton.textContent = 'I Have a Question';
+          agreeButton.disabled = true;
+          questionButton.disabled = false;
+        }, 500);
+        
+        return;
+      }
+      
+      // Original response format handling
       switch (data.action) {
         case 'next_video':
           if (data.data && data.data.nextVideo) {
@@ -1049,13 +1100,13 @@
               questionButton.disabled = false;
             }, 500);
           } else {
-            // If no next video but not complete, might need to handle differently
             console.error('No next video provided but not complete');
             showError('Unexpected response format. Please try again.');
           }
           break;
           
         case 'onboarding_complete':
+        case 'enrollment_complete':
           showMessage(
             'Enrollment Complete! 🎉',
             data.message + (data.data && data.data.nextSteps ? `<br><br><strong>Next Steps:</strong><br>${data.data.nextSteps}` : ''),
@@ -1073,12 +1124,49 @@
           break;
           
         default:
-          console.error('Unexpected server action:', data.action);
-          showError('Unexpected server response. Please try again.');
-          // Re-enable buttons
-          agreeButton.disabled = videoCompleted ? false : true;
-          questionButton.disabled = false;
-          buttonContainer.classList.add('visible');
+          // If no action but we're not at the end, increment and continue
+          if (currentSection < 5) {
+            console.log('No action specified, moving to next video');
+            currentSection++;
+            
+            // Use the hardcoded video URLs as fallback
+            const videoUrls = [
+              'https://youtu.be/EKxdPl-Ld0c',
+              'https://youtu.be/0jce4tanHFg',
+              'https://youtu.be/-899WTNMfIw',
+              'https://youtu.be/G1HerzEj_LY',
+              'https://youtu.be/gNpEetenX4Y',
+              'https://youtu.be/rMgQFwRS7q4'
+            ];
+            
+            if (currentSection < videoUrls.length) {
+              updateProgress(
+                Math.round((currentSection + 1) / 6 * 100),
+                currentSection + 1,
+                6
+              );
+              
+              setTimeout(() => {
+                loadVideo(
+                  videoUrls[currentSection],
+                  `Part ${currentSection + 1}: Terms & Conditions`,
+                  `Part ${currentSection + 1} of Achieve Test Prep terms and conditions`
+                );
+                
+                agreeButton.textContent = 'I Agree';
+                questionButton.textContent = 'I Have a Question';
+                agreeButton.disabled = true;
+                questionButton.disabled = false;
+              }, 500);
+            }
+          } else {
+            // We're at the end
+            showMessage(
+              'Enrollment Complete! 🎉',
+              'Thank you for completing all 6 videos and agreeing to our terms and conditions.',
+              true
+            );
+          }
       }
     }
 
