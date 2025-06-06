@@ -1,13 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Video Enrollment System</title>
-
-  <!-- YouTube IFrame API Loader -->
-  <script src="https://www.youtube.com/iframe_api"></script>
-
   <style>
     * {
       margin: 0;
@@ -15,50 +11,15 @@
       box-sizing: border-box;
     }
 
-    :root {
-      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      --success-color: #4ade80;
-      --warning-color: #f59e0b;
-      --danger-color: #ef4444;
-      --dark-bg: #1a1a2e;
-      --glass-bg: rgba(255, 255, 255, 0.1);
-      --glass-border: rgba(255, 255, 255, 0.2);
-    }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: var(--primary-gradient);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #333;
       padding: 20px;
-      position: relative;
-      overflow-x: hidden;
-    }
-
-    /* Animated background particles */
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-image: 
-        radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-      animation: floatParticles 20s ease-in-out infinite;
-      pointer-events: none;
-    }
-
-    @keyframes floatParticles {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      33% { transform: translate(30px, -30px) rotate(120deg); }
-      66% { transform: translate(-20px, 20px) rotate(240deg); }
     }
 
     .container {
@@ -68,8 +29,6 @@
       flex-direction: column;
       align-items: center;
       gap: 2rem;
-      position: relative;
-      z-index: 1;
     }
 
     h1 {
@@ -79,140 +38,50 @@
       text-align: center;
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
       animation: fadeInDown 0.8s ease-out;
-      background: linear-gradient(45deg, #fff, #f0f0f0);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      position: relative;
-    }
-
-    h1::after {
-      content: attr(data-text);
-      position: absolute;
-      left: 0;
-      top: 0;
-      z-index: -1;
-      background: linear-gradient(45deg, #667eea, #764ba2);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      filter: blur(10px);
-      opacity: 0.5;
-    }
-
-    /* Glass morphism progress container */
-    .progress-container {
-      width: 100%;
-      background: var(--glass-bg);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid var(--glass-border);
-      border-radius: 20px;
-      padding: 1.5rem;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
 
     .progress-bar {
       width: 100%;
-      height: 12px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 6px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
       overflow: hidden;
-      position: relative;
-    }
-
-    .progress-bar::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-      animation: shimmer 2s infinite;
-    }
-
-    @keyframes shimmer {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
+      margin-bottom: 1rem;
     }
 
     .progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--success-color), #22c55e);
-      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-      border-radius: 6px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .progress-fill::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: 4px;
-      background: rgba(255, 255, 255, 0.5);
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-      animation: pulse 1s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      background: #4ade80;
+      transition: width 0.5s ease-out;
+      border-radius: 4px;
     }
 
     .progress-text {
       color: white;
       text-align: center;
       font-size: 0.9rem;
-      margin-top: 1rem;
-      font-weight: 500;
+      margin-bottom: 1rem;
     }
 
     .video-container {
       width: 100%;
       background: #000;
-      border-radius: 24px;
+      border-radius: 20px;
       overflow: hidden;
-      box-shadow: 
-        0 20px 60px rgba(0, 0, 0, 0.3),
-        0 0 0 1px rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
       animation: fadeInUp 0.8s ease-out;
       position: relative;
       aspect-ratio: 16/9;
-      transform-style: preserve-3d;
-      transition: transform 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .video-container:hover {
-      transform: translateY(-5px);
     }
 
     .video-container.hidden {
       display: none;
     }
 
-    #videoPlayer {
-      width: 100%;
-      height: 100%;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #videoPlayer iframe {
+    iframe {
       width: 100%;
       height: 100%;
       border: none;
-      position: absolute;
-      top: 0;
-      left: 0;
     }
 
     .loading-overlay {
@@ -221,44 +90,24 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.9);
+      background: rgba(0, 0, 0, 0.8);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 10;
-      backdrop-filter: blur(5px);
     }
 
     .loading-overlay.hidden {
       display: none;
     }
 
-    /* Modern loader */
     .loader {
-      width: 60px;
-      height: 60px;
-      position: relative;
-    }
-
-    .loader::before,
-    .loader::after {
-      content: '';
-      position: absolute;
-      width: 100%;
-      height: 100%;
+      width: 50px;
+      height: 50px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
       border-radius: 50%;
-      border: 3px solid transparent;
-      border-top-color: #667eea;
-      animation: spin 1.5s linear infinite;
-    }
-
-    .loader::after {
-      border-top-color: #764ba2;
-      animation: spin 1.5s linear infinite reverse;
-      width: 80%;
-      height: 80%;
-      top: 10%;
-      left: 10%;
+      animation: spin 1s linear infinite;
     }
 
     .button-container {
@@ -287,19 +136,16 @@
       border: none;
       border-radius: 50px;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s ease;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       position: relative;
       overflow: hidden;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
     }
 
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
-      transform: scale(0.95);
     }
 
     button::before {
@@ -309,7 +155,7 @@
       left: 50%;
       width: 0;
       height: 0;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+      background: rgba(255, 255, 255, 0.3);
       border-radius: 50%;
       transform: translate(-50%, -50%);
       transition: width 0.6s, height 0.6s;
@@ -320,163 +166,101 @@
       height: 300px;
     }
 
-    button::after {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-      opacity: 0;
-      transition: opacity 0.3s;
-      border-radius: 50px;
-    }
-
-    button:not(:disabled):hover::after {
-      opacity: 1;
-      animation: buttonShine 0.5s ease-out;
-    }
-
-    @keyframes buttonShine {
-      0% { transform: translateX(-100%) rotate(45deg); }
-      100% { transform: translateX(100%) rotate(45deg); }
-    }
-
-    .agree-btn {
-      background: linear-gradient(135deg, var(--success-color), #22c55e);
+    .agree-btn, .submit-btn {
+      background: #4ade80;
       color: white;
       box-shadow: 0 4px 15px rgba(74, 222, 128, 0.4);
     }
 
-    .agree-btn:not(:disabled):hover {
-      transform: translateY(-2px) scale(1.05);
-      box-shadow: 0 8px 25px rgba(74, 222, 128, 0.5);
+    .agree-btn:not(:disabled):hover, .submit-btn:not(:disabled):hover {
+      background: #22c55e;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(74, 222, 128, 0.5);
     }
 
     .question-btn {
-      background: linear-gradient(135deg, var(--warning-color), #d97706);
+      background: #f59e0b;
       color: white;
       box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
     }
 
     .question-btn:not(:disabled):hover {
-      transform: translateY(-2px) scale(1.05);
-      box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5);
+      background: #d97706;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
     }
 
     .start-btn {
-      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      background: #8b5cf6;
       color: white;
       box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
-      animation: pulseGlow 2s ease-in-out infinite;
-    }
-
-    @keyframes pulseGlow {
-      0%, 100% { box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); }
-      50% { box-shadow: 0 4px 30px rgba(139, 92, 246, 0.6); }
     }
 
     .start-btn:not(:disabled):hover {
-      transform: translateY(-2px) scale(1.05);
-      animation: none;
-      box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+      background: #7c3aed;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
     }
 
-    .message {
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      padding: 2.5rem;
-      border-radius: 24px;
+    .message, .signature-form {
+      background: white;
+      padding: 2rem;
+      border-radius: 15px;
       text-align: center;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
       animation: fadeIn 0.5s ease-out;
+      width: 100%;
       max-width: 500px;
-      color: white;
     }
 
-    .message h2 {
-      color: var(--success-color);
-      margin-bottom: 1.2rem;
-      font-size: 2rem;
-      text-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+    .message h2, .signature-form h2 {
+      color: #4ade80;
+      margin-bottom: 1rem;
+      font-size: 1.8rem;
     }
 
-    .message p {
-      color: rgba(255, 255, 255, 0.9);
+    .message p, .signature-form p {
+      color: #666;
       font-size: 1.1rem;
       line-height: 1.6;
-      margin-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .signature-form input {
+        width: 100%;
+        padding: 15px;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        font-size: 1rem;
     }
 
     .error-message {
-      background: rgba(239, 68, 68, 0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #fecaca;
-      padding: 1rem 1.5rem;
-      border-radius: 12px;
+      background: #fee;
+      color: #c33;
+      padding: 1rem;
+      border-radius: 10px;
       margin-top: 1rem;
       animation: shake 0.5s ease-out;
-      box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
     }
 
     .section-info {
-      background: var(--glass-bg);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid var(--glass-border);
-      padding: 1.5rem 2rem;
-      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 1rem 2rem;
+      border-radius: 10px;
       color: white;
       text-align: center;
       margin-bottom: 1rem;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-      animation: fadeIn 0.5s ease-out;
     }
 
     .section-info h3 {
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       margin-bottom: 0.5rem;
-      background: linear-gradient(45deg, #fff, #f0f0f0);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
     }
 
     .section-info p {
-      font-size: 1rem;
+      font-size: 0.9rem;
       opacity: 0.9;
-      line-height: 1.5;
-    }
-
-    /* Completion celebration */
-    .celebration {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 1000;
-    }
-
-    .confetti {
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      background: var(--success-color);
-      animation: confettiFall 3s ease-out forwards;
-    }
-
-    @keyframes confettiFall {
-      0% {
-        transform: translateY(-100vh) rotate(0deg);
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(100vh) rotate(720deg);
-        opacity: 0;
-      }
     }
 
     @keyframes fadeInDown {
@@ -504,11 +288,9 @@
     @keyframes fadeIn {
       from {
         opacity: 0;
-        transform: scale(0.95);
       }
       to {
         opacity: 1;
-        transform: scale(1);
       }
     }
 
@@ -519,17 +301,10 @@
 
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
-      10% { transform: translateX(-10px); }
-      20% { transform: translateX(10px); }
-      30% { transform: translateX(-10px); }
-      40% { transform: translateX(10px); }
-      50% { transform: translateX(-5px); }
-      60% { transform: translateX(5px); }
-      70% { transform: translateX(-2px); }
-      80% { transform: translateX(2px); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
     }
 
-    /* Responsive design */
     @media (max-width: 768px) {
       .container {
         padding: 10px;
@@ -548,452 +323,224 @@
       .section-info {
         padding: 1rem;
       }
-
-      .message {
-        padding: 1.5rem;
-      }
-    }
-
-    /* Dark mode support */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --glass-bg: rgba(255, 255, 255, 0.05);
-        --glass-border: rgba(255, 255, 255, 0.1);
-      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1 data-text="Video Enrollment System">Video Enrollment System</h1>
-
-    <!-- Progress Container -->
-    <div id="progressContainer" class="progress-container" style="display: none;">
+    <h1>Video Enrollment System</h1>
+    
+    <div id="progressContainer" style="width: 100%; display: none;">
       <div class="progress-bar">
         <div class="progress-fill" id="progressFill" style="width: 0%"></div>
       </div>
       <div class="progress-text" id="progressText">Progress: 0%</div>
     </div>
 
-    <!-- Section Info -->
     <div class="section-info" id="sectionInfo" style="display: none;">
       <h3 id="sectionTitle">Loading...</h3>
       <p id="sectionDescription">Please wait while we load your video.</p>
     </div>
-
-    <!-- Video Container -->
+    
     <div class="video-container hidden" id="videoContainer">
       <div class="loading-overlay" id="loadingOverlay">
         <div class="loader"></div>
       </div>
-      <div id="videoPlayer"></div>
+      <iframe 
+        id="videoPlayer" 
+        src=""
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+      </iframe>
     </div>
 
-    <!-- Button Container -->
     <div class="button-container" id="buttonContainer">
       <button class="start-btn" id="startButton" onclick="startEnrollment()">Start Enrollment</button>
       <button class="agree-btn" id="agreeButton" onclick="sendResponse('agree')" style="display: none;">I Agree</button>
       <button class="question-btn" id="questionButton" onclick="sendResponse('disagree')" style="display: none;">I Have a Question</button>
     </div>
 
-    <!-- Message Container -->
+    <div id="signatureContainer" style="display: none;">
+        <div class="signature-form">
+            <h2>Final Step: Signature</h2>
+            <p>Please type your full name below to serve as your digital signature, then type it again to confirm.</p>
+            <input type="text" id="signatureInput" placeholder="Enter your full name (as signature)">
+            <input type="text" id="printNameInput" placeholder="Print your full name">
+            <button class="submit-btn" onclick="submitSignature()">Submit Signature</button>
+        </div>
+    </div>
+
     <div id="messageContainer"></div>
   </div>
 
   <script>
-    // ─────────────────────────────────────────────────────────────────────
-    // Configuration & State
-    // ─────────────────────────────────────────────────────────────────────
+    // --- Configuration ---
     const WEBHOOK_URL = 'https://bigg804.app.n8n.cloud/webhook/video-onboarding';
     
+    // --- State management ---
     let currentSection = 0;
     let sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
     let videoCompleted = false;
     let isProcessing = false;
-    let ytPlayer = null;
-    let retryCount = 0;
-    const MAX_RETRIES = 3;
-
-    // ─────────────────────────────────────────────────────────────────────
-    // DOM References
-    // ─────────────────────────────────────────────────────────────────────
-    const videoContainer    = document.getElementById('videoContainer');
-    const loadingOverlay    = document.getElementById('loadingOverlay');
-    const videoPlayerDiv    = document.getElementById('videoPlayer');
-    const startButton       = document.getElementById('startButton');
-    const agreeButton       = document.getElementById('agreeButton');
-    const questionButton    = document.getElementById('questionButton');
-    const buttonContainer   = document.getElementById('buttonContainer');
-    const messageContainer  = document.getElementById('messageContainer');
-    const progressFill      = document.getElementById('progressFill');
-    const progressText      = document.getElementById('progressText');
+    
+    // --- DOM elements ---
+    const videoContainer = document.getElementById('videoContainer');
+    const buttonContainer = document.getElementById('buttonContainer');
+    const signatureContainer = document.getElementById('signatureContainer');
+    const messageContainer = document.getElementById('messageContainer');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const videoPlayer = document.getElementById('videoPlayer');
+    const startButton = document.getElementById('startButton');
+    const agreeButton = document.getElementById('agreeButton');
+    const questionButton = document.getElementById('questionButton');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
     const progressContainer = document.getElementById('progressContainer');
-    const sectionInfo       = document.getElementById('sectionInfo');
-    const sectionTitle      = document.getElementById('sectionTitle');
-    const sectionDescription= document.getElementById('sectionDescription');
+    const sectionInfo = document.getElementById('sectionInfo');
+    const sectionTitle = document.getElementById('sectionTitle');
+    const sectionDescription = document.getElementById('sectionDescription');
+    const signatureInput = document.getElementById('signatureInput');
+    const printNameInput = document.getElementById('printNameInput');
 
-    // ─────────────────────────────────────────────────────────────────────
-    // YouTube IFrame API Ready Callback
-    // ─────────────────────────────────────────────────────────────────────
-    function onYouTubeIframeAPIReady() {
-      // Player will be created when needed
-      console.log('YouTube IFrame API ready');
+
+    // --- UI Update Functions ---
+
+    function getYouTubeEmbedUrl(url) {
+      const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([^&\n?#]+)/);
+      return (videoId && videoId[1]) ? `https://www.youtube.com/embed/${videoId[1]}?enablejsapi=1&autoplay=1&rel=0` : url;
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Create YouTube Player
-    // ─────────────────────────────────────────────────────────────────────
-    function createYouTubePlayer(videoId) {
-      // Destroy existing player if any
-      if (ytPlayer) {
-        try {
-          ytPlayer.destroy();
-        } catch (e) {
-          console.log('Error destroying player:', e);
-        }
-      }
-
-      // Clear the container
-      videoPlayerDiv.innerHTML = '';
-      
-      // Create a new div for the player
-      const playerDiv = document.createElement('div');
-      playerDiv.id = 'youtube-player';
-      videoPlayerDiv.appendChild(playerDiv);
-
-      try {
-        ytPlayer = new YT.Player('youtube-player', {
-          height: '100%',
-          width: '100%',
-          videoId: videoId,
-          playerVars: {
-            'autoplay': 1,
-            'controls': 1,
-            'disablekb': 0,
-            'modestbranding': 1,
-            'rel': 0,
-            'showinfo': 0,
-            'iv_load_policy': 3,
-            'origin': window.location.origin
-          },
-          events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange,
-            'onError': onPlayerError
-          }
-        });
-      } catch (error) {
-        console.error('Error creating YouTube player:', error);
-        showError('Failed to initialize video player. Please refresh the page.');
-      }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Player Event Handlers
-    // ─────────────────────────────────────────────────────────────────────
-    function onPlayerReady(event) {
-      console.log('Player ready');
-      setLoading(false);
-      buttonContainer.classList.add('visible');
-    }
-
-    function onPlayerStateChange(event) {
-      console.log('Player state:', event.data);
-      
-      if (event.data === YT.PlayerState.ENDED) {
-        videoCompleted = true;
-        agreeButton.disabled = false;
-        questionButton.disabled = false;
-        
-        // Visual feedback for completion
-        agreeButton.style.animation = 'pulseGlow 2s ease-in-out infinite';
-      } else if (event.data === YT.PlayerState.PLAYING) {
-        setLoading(false);
-      }
-    }
-
-    function onPlayerError(event) {
-      console.error('Player error:', event.data);
-      handleVideoError();
-    }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Extract YouTube Video ID
-    // ─────────────────────────────────────────────────────────────────────
-    function getYouTubeVideoId(url) {
-      const patterns = [
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([^&\n?#]+)/,
-        /^([a-zA-Z0-9_-]{11})$/
-      ];
-      
-      for (const pattern of patterns) {
-        const match = url.match(pattern);
-        if (match && match[1]) {
-          return match[1];
-        }
-      }
-      
-      return null;
-    }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Loading State Management
-    // ─────────────────────────────────────────────────────────────────────
-    function setLoading(show) {
-      if (show) {
-        loadingOverlay.classList.remove('hidden');
-      } else {
-        loadingOverlay.classList.add('hidden');
-      }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Progress Bar Updates with Animation
-    // ─────────────────────────────────────────────────────────────────────
     function updateProgress(percentage, current, total) {
       progressFill.style.width = `${percentage}%`;
       progressText.textContent = `Progress: ${percentage}% (Video ${current} of ${total})`;
-      
-      // Add a subtle bounce effect when progress updates
-      progressFill.style.animation = 'none';
-      setTimeout(() => {
-        progressFill.style.animation = 'pulse 1s ease-in-out infinite';
-      }, 100);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Error Handling with Retry Logic
-    // ─────────────────────────────────────────────────────────────────────
+    function setLoading(show) {
+      loadingOverlay.classList.toggle('hidden', !show);
+    }
+
     function showError(message) {
       messageContainer.innerHTML = `<div class="error-message">${message}</div>`;
-      setTimeout(() => {
-        messageContainer.innerHTML = '';
-      }, 5000);
+      setTimeout(() => { messageContainer.innerHTML = ''; }, 5000);
     }
 
-    function handleVideoError() {
-      if (retryCount < MAX_RETRIES) {
-        retryCount++;
-        showError(`Video loading error. Retrying... (${retryCount}/${MAX_RETRIES})`);
-        setTimeout(() => {
-          if (ytPlayer && ytPlayer.getVideoUrl) {
-            const currentUrl = ytPlayer.getVideoUrl();
-            const videoId = getYouTubeVideoId(currentUrl);
-            if (videoId) {
-              createYouTubePlayer(videoId);
-            }
-          }
-        }, 2000);
-      } else {
-        showError('Unable to load video. Please refresh the page and try again.');
-        agreeButton.disabled = false;
-        questionButton.disabled = false;
-      }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Success Message with Confetti Effect
-    // ─────────────────────────────────────────────────────────────────────
-    function showMessage(title, content, isComplete = false) {
+    function showMessage(title, content) {
+      progressContainer.style.display = 'none';
+      sectionInfo.style.display = 'none';
       videoContainer.classList.add('hidden');
       buttonContainer.classList.add('hidden');
-      sectionInfo.style.display = 'none';
-      progressContainer.style.display = 'none';
-
+      signatureContainer.style.display = 'none';
+      
       messageContainer.innerHTML = `
         <div class="message">
           <h2>${title}</h2>
           <p>${content}</p>
-          ${isComplete ? '<p style="margin-top: 1.5rem; font-weight: 600;">Thank you for completing the enrollment process! 🎉</p>' : ''}
         </div>
       `;
-
-      if (isComplete) {
-        createConfetti();
-      }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Confetti Celebration Effect
-    // ─────────────────────────────────────────────────────────────────────
-    function createConfetti() {
-      const colors = ['#4ade80', '#f59e0b', '#8b5cf6', '#ef4444', '#3b82f6', '#ec4899'];
-      const confettiContainer = document.createElement('div');
-      confettiContainer.className = 'celebration';
-      document.body.appendChild(confettiContainer);
-
-      for (let i = 0; i < 50; i++) {
-        const confetti = document.createElement('div');
-        confetti.className = 'confetti';
-        confetti.style.left = Math.random() * 100 + '%';
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.animationDelay = Math.random() * 3 + 's';
-        confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
-        confettiContainer.appendChild(confetti);
-      }
-
-      setTimeout(() => {
-        confettiContainer.remove();
-      }, 5000);
+    function showSignatureForm() {
+        progressContainer.style.display = 'none';
+        sectionInfo.style.display = 'none';
+        videoContainer.classList.add('hidden');
+        buttonContainer.classList.add('hidden');
+        signatureContainer.style.display = 'block';
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Load Video with Enhanced Error Handling
-    // ─────────────────────────────────────────────────────────────────────
+
+    // --- Core Logic ---
+
     function loadVideo(videoUrl, title, description) {
       videoCompleted = false;
-      retryCount = 0;
-      
-      // Clear button animations
-      agreeButton.style.animation = '';
       
       sectionTitle.textContent = title;
       sectionDescription.textContent = description;
       sectionInfo.style.display = 'block';
-
+      
       videoContainer.classList.remove('hidden');
       setLoading(true);
-
-      const videoId = getYouTubeVideoId(videoUrl);
       
-      if (!videoId) {
-        showError('Invalid video URL. Please contact support.');
+      videoPlayer.src = getYouTubeEmbedUrl(videoUrl);
+      
+      videoPlayer.onload = () => {
         setLoading(false);
-        // Enable buttons anyway so user can continue
-        agreeButton.disabled = false;
-        questionButton.disabled = false;
-        return;
-      }
-
-      // Wait for YouTube API to be ready
-      if (typeof YT === 'undefined' || !YT.Player) {
-        console.log('YouTube API not ready, waiting...');
-        setTimeout(() => loadVideo(videoUrl, title, description), 1000);
-        return;
-      }
-
-      // Create or update player
-      try {
-        createYouTubePlayer(videoId);
-      } catch (error) {
-        console.error('Error creating player:', error);
-        handleVideoError();
-      }
-
-      agreeButton.disabled = true;
-      questionButton.disabled = false;
-      buttonContainer.classList.add('visible');
+        // In a real app, use the YouTube Player API for accurate completion tracking.
+        // For this demo, we use a timeout.
+        setTimeout(() => {
+          videoCompleted = true;
+          agreeButton.disabled = false;
+          buttonContainer.classList.add('visible');
+        }, 5000); // Enable 'Agree' after 5 seconds
+      };
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Start Enrollment with Loading States
-    // ─────────────────────────────────────────────────────────────────────
     async function startEnrollment() {
       if (isProcessing) return;
       
       isProcessing = true;
       startButton.disabled = true;
-      startButton.textContent = 'Starting...';
-
+      
       try {
         const response = await fetch(WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             sessionId: sessionId,
-            section: currentSection,
+            section: 0, // Always start with section 0
             response: 'start'
           })
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
-        console.log('Start enrollment response:', data);
-
-        if (data.videoConfig && data.videoConfig.currentSection) {
+        
+        if (data.success && data.data && data.data.currentVideo) {
           startButton.style.display = 'none';
           agreeButton.style.display = 'inline-block';
           questionButton.style.display = 'inline-block';
           agreeButton.disabled = true;
           questionButton.disabled = false;
-
+          
           progressContainer.style.display = 'block';
           updateProgress(
-            data.videoConfig.completionPercentage || 0,
-            currentSection + 1,
-            data.videoConfig.totalSections || 6
+            data.data.progress.completionPercentage,
+            data.data.progress.currentSection + 1,
+            data.data.progress.totalSections
           );
-
+          
           loadVideo(
-            data.videoConfig.currentSection.videoUrl,
-            data.videoConfig.currentSection.title,
-            data.videoConfig.currentSection.description
+            data.data.currentVideo.url,
+            data.data.currentVideo.title,
+            data.data.currentVideo.description
           );
         } else {
-          // Fallback if server doesn't return expected format
-          console.log('Using fallback video URLs');
-          startButton.style.display = 'none';
-          agreeButton.style.display = 'inline-block';
-          questionButton.style.display = 'inline-block';
-          agreeButton.disabled = true;
-          questionButton.disabled = false;
-
-          progressContainer.style.display = 'block';
-          updateProgress(0, 1, 6);
-
-          loadVideo(
-            'https://youtu.be/EKxdPl-Ld0c',
-            'Part 1: Terms & Conditions',
-            'Part 1 of Achieve Test Prep terms and conditions'
-          );
+          showError(data.message || 'Failed to load video configuration. Please try again.');
+          startButton.disabled = false;
         }
-      } catch (err) {
-        console.error('Error starting enrollment:', err);
+      } catch (error) {
+        console.error('Error starting enrollment:', error);
         showError('Failed to connect to the enrollment system. Please check your connection and try again.');
         startButton.disabled = false;
-        startButton.textContent = 'Start Enrollment';
       } finally {
         isProcessing = false;
       }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Handle Response Submission with Better UX
-    // ─────────────────────────────────────────────────────────────────────
     async function sendResponse(choice) {
       if (isProcessing) return;
-
+      
       if (choice === 'agree' && !videoCompleted) {
-        showError('Please watch the entire video before proceeding.');
+        showError('Please watch the video before proceeding.');
         return;
       }
 
       isProcessing = true;
-      
-      // Update button states and text
-      const originalAgreeText = agreeButton.textContent;
-      const originalQuestionText = questionButton.textContent;
-      
-      if (choice === 'agree') {
-        agreeButton.textContent = 'Processing...';
-        agreeButton.disabled = true;
-        questionButton.disabled = true;
-      } else {
-        questionButton.textContent = 'Submitting...';
-        agreeButton.disabled = true;
-        questionButton.disabled = true;
-      }
+      agreeButton.disabled = true;
+      questionButton.disabled = true;
+      buttonContainer.classList.remove('visible');
 
       try {
-        console.log('Sending response:', {
-          sessionId: sessionId,
-          section: currentSection,
-          response: choice
-        });
-
         const response = await fetch(WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1004,26 +551,22 @@
           })
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
-        console.log('Received response:', data);
-
-        if (data.success) {
-          handleSuccessfulResponse(data);
-        } else {
-          throw new Error(data.message || 'An error occurred');
-        }
-      } catch (err) {
-        console.error('Error sending response:', err);
-        showError('Failed to submit your response. Please try again.');
         
-        // Restore button states
-        agreeButton.textContent = originalAgreeText;
-        questionButton.textContent = originalQuestionText;
-        agreeButton.disabled = videoCompleted ? false : true;
+        if (data.success) {
+          handleAction(data.action, data);
+        } else {
+          showError(data.message || 'An error occurred. Please try again.');
+          agreeButton.disabled = !videoCompleted;
+          questionButton.disabled = false;
+          buttonContainer.classList.add('visible');
+        }
+      } catch (error) {
+        console.error('Error sending response:', error);
+        showError('Failed to submit your response. Please try again.');
+        agreeButton.disabled = !videoCompleted;
         questionButton.disabled = false;
         buttonContainer.classList.add('visible');
       } finally {
@@ -1031,251 +574,80 @@
       }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Handle Different Response Types
-    // ─────────────────────────────────────────────────────────────────────
-    function handleSuccessfulResponse(data) {
-      console.log('Server response:', data);
-      
-      // Check if this is actually the final video
-      const isActuallyComplete = currentSection >= 5; // 0-indexed, so 5 is the 6th video
-      
-      // If server says complete but we're not at the end, continue to next video
-      if ((data.action === 'onboarding_complete' || data.action === 'enrollment_complete') && !isActuallyComplete) {
-        console.log(`Server said complete but we're only on video ${currentSection + 1}, continuing...`);
-        
-        // Increment to next section
-        currentSection++;
-        
-        // Define all video URLs
-        const videos = [
-          {
-            url: 'https://youtu.be/EKxdPl-Ld0c',
-            title: 'Part 1: Terms & Conditions',
-            description: 'Part 1 of Achieve Test Prep terms and conditions'
-          },
-          {
-            url: 'https://youtu.be/0jce4tanHFg',
-            title: 'Part 2: Terms & Conditions',
-            description: 'Part 2 of Achieve Test Prep terms and conditions'
-          },
-          {
-            url: 'https://youtu.be/-899WTNMfIw',
-            title: 'Part 3: Terms & Conditions',
-            description: 'Part 3 of Achieve Test Prep terms and conditions'
-          },
-          {
-            url: 'https://youtu.be/G1HerzEj_LY',
-            title: 'Part 4: Terms & Conditions',
-            description: 'Part 4 of Achieve Test Prep terms and conditions'
-          },
-          {
-            url: 'https://youtu.be/gNpEetenX4Y',
-            title: 'Part 5: Terms & Conditions',
-            description: 'Part 5 of Achieve Test Prep terms and conditions'
-          },
-          {
-            url: 'https://youtu.be/rMgQFwRS7q4',
-            title: 'Part 6: Terms & Conditions',
-            description: 'Part 6 of Achieve Test Prep terms and conditions'
-          }
-        ];
-        
-        if (currentSection < videos.length) {
-          // Update progress
-          updateProgress(
-            Math.round((currentSection + 1) / 6 * 100),
-            currentSection + 1,
-            6
-          );
-          
-          // Load next video
-          setTimeout(() => {
-            loadVideo(
-              videos[currentSection].url,
-              videos[currentSection].title,
-              videos[currentSection].description
-            );
-            
-            // Reset button states
-            agreeButton.textContent = 'I Agree';
-            questionButton.textContent = 'I Have a Question';
-            agreeButton.disabled = true;
-            questionButton.disabled = false;
-            buttonContainer.classList.add('visible');
-          }, 500);
+    async function submitSignature() {
+        if (isProcessing) return;
+
+        const signature = signatureInput.value.trim();
+        const printName = printNameInput.value.trim();
+
+        if (!signature || !printName) {
+            showError("Please enter both your signature and printed name.");
+            return;
         }
-        
-        return;
-      }
-      
-      // Check if we have a videoConfig object (alternative response format)
-      if (data.videoConfig && data.videoConfig.currentSection) {
-        console.log('Found videoConfig format response');
-        
-        // Update section number if provided
-        if (data.videoConfig.currentSection.section !== undefined) {
-          currentSection = data.videoConfig.currentSection.section;
+
+        isProcessing = true;
+
+        try {
+            const response = await fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionId: sessionId,
+                    response: 'submit_signature',
+                    signature: signature,
+                    printName: printName
+                })
+            });
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            const data = await response.json();
+            if (data.success) {
+                handleAction(data.action, data);
+            } else {
+                showError(data.message || 'Could not submit signature. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error submitting signature:', error);
+            showError('Failed to submit your signature. Please check your connection and try again.');
+        } finally {
+            isProcessing = false;
         }
-        
-        // Update progress
-        updateProgress(
-          data.videoConfig.completionPercentage || Math.round((currentSection + 1) / 6 * 100),
-          currentSection + 1,
-          data.videoConfig.totalSections || 6
-        );
-        
-        // Load the next video
-        setTimeout(() => {
-          loadVideo(
-            data.videoConfig.currentSection.videoUrl,
-            data.videoConfig.currentSection.title,
-            data.videoConfig.currentSection.description
-          );
-          
-          // Reset button text and states
-          agreeButton.textContent = 'I Agree';
-          questionButton.textContent = 'I Have a Question';
-          agreeButton.disabled = true;
-          questionButton.disabled = false;
-          buttonContainer.classList.add('visible');
-        }, 500);
-        
-        return;
-      }
-      
-      // Original response format handling
-      switch (data.action) {
-        case 'next_video':
-          if (data.data && data.data.nextVideo) {
-            // Move to next section
-            currentSection = data.data.nextVideo.section;
-            
-            // Update progress
-            updateProgress(
-              data.data.progress.completionPercentage,
-              data.data.progress.currentSection,
-              data.data.progress.totalSections
-            );
-            
-            // Small delay for smooth transition
-            setTimeout(() => {
-              loadVideo(
-                data.data.nextVideo.url,
-                data.data.nextVideo.title,
-                data.data.nextVideo.description
-              );
-              
-              // Reset button text
-              agreeButton.textContent = 'I Agree';
-              questionButton.textContent = 'I Have a Question';
-              agreeButton.disabled = true;
-              questionButton.disabled = false;
-              buttonContainer.classList.add('visible');
-            }, 500);
-          }
-          break;
-          
-        case 'onboarding_complete':
-        case 'enrollment_complete':
-          // We're actually complete (checked above)
-          showMessage(
-            'Enrollment Complete! 🎉',
-            data.message || 'Congratulations! You have successfully completed the enrollment process.' + 
-            (data.data && data.data.nextSteps ? `<br><br><strong>Next Steps:</strong><br>${data.data.nextSteps}` : ''),
-            true
-          );
-          break;
-          
-        case 'disagreement_logged':
-          showMessage(
-            'Thank You for Your Feedback',
-            `${data.message}<br><br>
-            <strong>Expected contact time:</strong> ${data.data.followUp.expectedContactTime}<br>
-            <strong>Support email:</strong> <a href="mailto:${data.data.followUp.supportEmail}" style="color: #4ade80;">${data.data.followUp.supportEmail}</a>`
-          );
-          break;
-          
-        default:
-          console.error('Unexpected server action:', data.action);
-          showError('Unexpected server response. Please try again.');
-          // Re-enable buttons
-          agreeButton.disabled = videoCompleted ? false : true;
-          questionButton.disabled = false;
-          buttonContainer.classList.add('visible');
-      }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Keyboard Shortcuts
-    // ─────────────────────────────────────────────────────────────────────
-    document.addEventListener('keydown', (e) => {
-      if (isProcessing) return;
-      
-      // Enter key to start or agree
-      if (e.key === 'Enter') {
-        if (startButton.style.display !== 'none' && !startButton.disabled) {
-          startEnrollment();
-        } else if (agreeButton.style.display !== 'none' && !agreeButton.disabled) {
-          sendResponse('agree');
+    function handleAction(action, data) {
+        switch(action) {
+            case 'next_video':
+                currentSection = data.data.nextVideo.section;
+                updateProgress(
+                    data.data.progress.completionPercentage,
+                    data.data.progress.currentSection + 1,
+                    data.data.progress.totalSections
+                );
+                loadVideo(
+                    data.data.nextVideo.url,
+                    data.data.nextVideo.title,
+                    data.data.nextVideo.description
+                );
+                agreeButton.disabled = true;
+                questionButton.disabled = false;
+                break;
+            case 'request_signature':
+                showSignatureForm();
+                break;
+            case 'disagreement_logged':
+                showMessage('Thank You', data.message);
+                break;
+            case 'onboarding_complete':
+                showMessage('Enrollment Complete!', data.message);
+                break;
+            default:
+                showError('Received an unknown response from the server.');
         }
-      }
-      
-      // Q key for questions
-      if (e.key === 'q' || e.key === 'Q') {
-        if (questionButton.style.display !== 'none' && !questionButton.disabled) {
-          sendResponse('disagree');
-        }
-      }
-    });
+    }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Network Status Monitoring
-    // ─────────────────────────────────────────────────────────────────────
-    window.addEventListener('online', () => {
-      if (messageContainer.querySelector('.error-message')) {
-        showError('Connection restored. You can now continue.');
-      }
-    });
-
-    window.addEventListener('offline', () => {
-      showError('Internet connection lost. Please check your connection.');
-    });
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Page Visibility Handling
-    // ─────────────────────────────────────────────────────────────────────
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden && ytPlayer && ytPlayer.pauseVideo) {
-        ytPlayer.pauseVideo();
-      } else if (!document.hidden && ytPlayer && ytPlayer.playVideo && !videoCompleted) {
-        ytPlayer.playVideo();
-      }
-    });
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Initialize on Page Load
-    // ─────────────────────────────────────────────────────────────────────
     window.addEventListener('load', () => {
       buttonContainer.classList.add('visible');
-      
-      // Add title animation
-      const h1 = document.querySelector('h1');
-      h1.setAttribute('data-text', h1.textContent);
-      
-      // Check for YouTube API availability
-      if (typeof YT === 'undefined') {
-        console.warn('YouTube API not loaded yet, waiting...');
-      }
-    });
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Cleanup on Page Unload
-    // ─────────────────────────────────────────────────────────────────────
-    window.addEventListener('beforeunload', () => {
-      if (ytPlayer && ytPlayer.destroy) {
-        ytPlayer.destroy();
-      }
     });
   </script>
 </body>
