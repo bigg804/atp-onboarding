@@ -859,4 +859,245 @@
       startButton.textContent = 'Starting...';
 
       try {
-        const response =
+        const response = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: sessionId,
+            section: currentSection,
+            response: 'start'
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.videoConfig && data.videoConfig.currentSection) {
+          startButton.style.display = 'none';
+          agreeButton.style.display = 'inline-block';
+          questionButton.style.display = 'inline-block';
+          agreeButton.disabled = true;
+          questionButton.disabled = false;
+
+          progressContainer.style.display = 'block';
+          updateProgress(
+            data.videoConfig.completionPercentage || 0,
+            currentSection + 1,
+            data.videoConfig.totalSections || 6
+          );
+
+          loadVideo(
+            data.videoConfig.currentSection.videoUrl,
+            data.videoConfig.currentSection.title,
+            data.videoConfig.currentSection.description
+          );
+        } else {
+          throw new Error('Invalid video configuration received');
+        }
+      } catch (err) {
+        console.error('Error starting enrollment:', err);
+        showError('Failed to connect to the enrollment system. Please check your connection and try again.');
+        startButton.disabled = false;
+        startButton.textContent = 'Start Enrollment';
+      } finally {
+        isProcessing = false;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Handle Response Submission with Better UX
+    // ─────────────────────────────────────────────────────────────────────
+    async function sendResponse(choice) {
+      if (isProcessing) return;
+
+      if (choice === 'agree' && !videoCompleted) {
+        showError('Please watch the entire video before proceeding.');
+        return;
+      }
+
+      isProcessing = true;
+      
+      // Update button states and text
+      const originalAgreeText = agreeButton.textContent;
+      const originalQuestionText = questionButton.textContent;
+      
+      if (choice === 'agree') {
+        agreeButton.textContent = 'Processing...';
+        agreeButton.disabled = true;
+        questionButton.disabled = true;
+      } else {
+        questionButton.textContent = 'Submitting...';
+        agreeButton.disabled = true;
+        questionButton.disabled = true;
+      }
+      
+      buttonContainer.classList.remove('visible');
+
+      try {
+        const response = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: sessionId,
+            section: currentSection,
+            response: choice
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          handleSuccessfulResponse(data);
+        } else {
+          throw new Error(data.message || 'An error occurred');
+        }
+      } catch (err) {
+        console.error('Error sending response:', err);
+        showError('Failed to submit your response. Please try again.');
+        
+        // Restore button states
+        agreeButton.textContent = originalAgreeText;
+        questionButton.textContent = originalQuestionText;
+        agreeButton.disabled = videoCompleted ? false : true;
+        questionButton.disabled = false;
+        buttonContainer.classList.add('visible');
+      } finally {
+        isProcessing = false;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Handle Different Response Types
+    // ─────────────────────────────────────────────────────────────────────
+    function handleSuccessfulResponse(data) {
+      switch (data.action) {
+        case 'next_video':
+          if (data.data && data.data.nextVideo) {
+            currentSection = data.data.nextVideo.section;
+            
+            updateProgress(
+              data.data.progress.completionPercentage,
+              data.data.progress.currentSection,
+              data.data.progress.totalSections
+            );
+            
+            // Add a small delay for smooth transition
+            setTimeout(() => {
+              loadVideo(
+                data.data.nextVideo.url,
+                data.data.nextVideo.title,
+                data.data.nextVideo.description
+              );
+              
+              // Reset button text
+              agreeButton.textContent = 'I Agree';
+              questionButton.textContent = 'I Have a Question';
+              agreeButton.disabled = true;
+              questionButton.disabled = false;
+            }, 500);
+          }
+          break;
+          
+        case 'onboarding_complete':
+          showMessage(
+            'Enrollment Complete! 🎉',
+            data.message + (data.data.nextSteps ? `<br><br><strong>Next Steps:</strong><br>${data.data.nextSteps}` : ''),
+            true
+          );
+          break;
+          
+        case 'disagreement_logged':
+          showMessage(
+            'Thank You for Your Feedback',
+            `${data.message}<br><br>
+            <strong>Expected contact time:</strong> ${data.data.followUp.expectedContactTime}<br>
+            <strong>Support email:</strong> <a href="mailto:${data.data.followUp.supportEmail}" style="color: #4ade80;">${data.data.followUp.supportEmail}</a>`
+          );
+          break;
+          
+        default:
+          throw new Error('Unexpected server action');
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Keyboard Shortcuts
+    // ─────────────────────────────────────────────────────────────────────
+    document.addEventListener('keydown', (e) => {
+      if (isProcessing) return;
+      
+      // Enter key to start or agree
+      if (e.key === 'Enter') {
+        if (startButton.style.display !== 'none' && !startButton.disabled) {
+          startEnrollment();
+        } else if (agreeButton.style.display !== 'none' && !agreeButton.disabled) {
+          sendResponse('agree');
+        }
+      }
+      
+      // Q key for questions
+      if (e.key === 'q' || e.key === 'Q') {
+        if (questionButton.style.display !== 'none' && !questionButton.disabled) {
+          sendResponse('disagree');
+        }
+      }
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Network Status Monitoring
+    // ─────────────────────────────────────────────────────────────────────
+    window.addEventListener('online', () => {
+      if (messageContainer.querySelector('.error-message')) {
+        showError('Connection restored. You can now continue.');
+      }
+    });
+
+    window.addEventListener('offline', () => {
+      showError('Internet connection lost. Please check your connection.');
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Page Visibility Handling
+    // ─────────────────────────────────────────────────────────────────────
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && ytPlayer && ytPlayer.pauseVideo) {
+        ytPlayer.pauseVideo();
+      } else if (!document.hidden && ytPlayer && ytPlayer.playVideo && !videoCompleted) {
+        ytPlayer.playVideo();
+      }
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Initialize on Page Load
+    // ─────────────────────────────────────────────────────────────────────
+    window.addEventListener('load', () => {
+      buttonContainer.classList.add('visible');
+      
+      // Add title animation
+      const h1 = document.querySelector('h1');
+      h1.setAttribute('data-text', h1.textContent);
+      
+      // Check for YouTube API availability
+      if (typeof YT === 'undefined') {
+        console.warn('YouTube API not loaded yet, waiting...');
+      }
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Cleanup on Page Unload
+    // ─────────────────────────────────────────────────────────────────────
+    window.addEventListener('beforeunload', () => {
+      if (ytPlayer && ytPlayer.destroy) {
+        ytPlayer.destroy();
+      }
+    });
+  </script>
+</body>
+</html>
