@@ -1,654 +1,358 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Video Enrollment System</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #333;
-      padding: 20px;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 900px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2rem;
-    }
-
-    h1 {
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      font-weight: 700;
-      color: white;
-      text-align: center;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-      animation: fadeInDown 0.8s ease-out;
-    }
-
-    .progress-bar {
-      width: 100%;
-      height: 8px;
-      background: rgba(255, 255, 255, 0.3);
-      border-radius: 4px;
-      overflow: hidden;
-      margin-bottom: 1rem;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: #4ade80;
-      transition: width 0.5s ease-out;
-      border-radius: 4px;
-    }
-
-    .progress-text {
-      color: white;
-      text-align: center;
-      font-size: 0.9rem;
-      margin-bottom: 1rem;
-    }
-
-    .video-container {
-      width: 100%;
-      background: #000;
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      animation: fadeInUp 0.8s ease-out;
-      position: relative;
-      aspect-ratio: 16/9;
-    }
-
-    .video-container.hidden {
-      display: none;
-    }
-
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-
-    .loading-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-    }
-
-    .loading-overlay.hidden {
-      display: none;
-    }
-
-    .loader {
-      width: 50px;
-      height: 50px;
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #667eea;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    .button-container {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      justify-content: center;
-      opacity: 0;
-      transform: translateY(20px);
-      transition: all 0.5s ease-out;
-    }
-
-    .button-container.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .button-container.hidden {
-      display: none;
-    }
-
-    button {
-      padding: 16px 40px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      border: none;
-      border-radius: 50px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    button::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      background: rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      transition: width 0.6s, height 0.6s;
-    }
-
-    button:not(:disabled):hover::before {
-      width: 300px;
-      height: 300px;
-    }
-
-    .agree-btn, .submit-btn {
-      background: #4ade80;
-      color: white;
-      box-shadow: 0 4px 15px rgba(74, 222, 128, 0.4);
-    }
-
-    .agree-btn:not(:disabled):hover, .submit-btn:not(:disabled):hover {
-      background: #22c55e;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(74, 222, 128, 0.5);
-    }
-
-    .question-btn {
-      background: #f59e0b;
-      color: white;
-      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
-    }
-
-    .question-btn:not(:disabled):hover {
-      background: #d97706;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
-    }
-
-    .start-btn {
-      background: #8b5cf6;
-      color: white;
-      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
-    }
-
-    .start-btn:not(:disabled):hover {
-      background: #7c3aed;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
-    }
-
-    .message, .signature-form {
-      background: white;
-      padding: 2rem;
-      border-radius: 15px;
-      text-align: center;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-      animation: fadeIn 0.5s ease-out;
-      width: 100%;
-      max-width: 500px;
-    }
-
-    .message h2, .signature-form h2 {
-      color: #4ade80;
-      margin-bottom: 1rem;
-      font-size: 1.8rem;
-    }
-
-    .message p, .signature-form p {
-      color: #666;
-      font-size: 1.1rem;
-      line-height: 1.6;
-      margin-bottom: 1.5rem;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Video Enrollment</title>
     
-    .signature-form input {
-        width: 100%;
-        padding: 15px;
-        margin-bottom: 1rem;
-        border-radius: 8px;
-        border: 1px solid #ddd;
-        font-size: 1rem;
-    }
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts for premium typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom styles to complement Tailwind */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            background-image:
+                radial-gradient(at 47% 33%, hsl(203.79, 100%, 89%) 0, transparent 59%),
+                radial-gradient(at 82% 65%, hsl(218.00, 100%, 85%) 0, transparent 55%);
+        }
 
-    .error-message {
-      background: #fee;
-      color: #c33;
-      padding: 1rem;
-      border-radius: 10px;
-      margin-top: 1rem;
-      animation: shake 0.5s ease-out;
-    }
+        /* Animation classes */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
 
-    .section-info {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 1rem 2rem;
-      border-radius: 10px;
-      color: white;
-      text-align: center;
-      margin-bottom: 1rem;
-    }
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
 
-    .section-info h3 {
-      font-size: 1.2rem;
-      margin-bottom: 0.5rem;
-    }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
 
-    .section-info p {
-      font-size: 0.9rem;
-      opacity: 0.9;
-    }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Custom loader */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: #6366F1;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
 
-    @keyframes fadeInDown {
-      from {
-        opacity: 0;
-        transform: translateY(-30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-      to {
-        opacity: 1;
-      }
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-10px); }
-      75% { transform: translateX(10px); }
-    }
-
-    @media (max-width: 768px) {
-      .container {
-        padding: 10px;
-      }
-
-      .button-container {
-        flex-direction: column;
-        width: 100%;
-        max-width: 300px;
-      }
-
-      button {
-        width: 100%;
-      }
-
-      .section-info {
-        padding: 1rem;
-      }
-    }
-  </style>
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
-<body>
-  <div class="container">
-    <h1>Video Enrollment System</h1>
-    
-    <div id="progressContainer" style="width: 100%; display: none;">
-      <div class="progress-bar">
-        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-      </div>
-      <div class="progress-text" id="progressText">Progress: 0%</div>
-    </div>
+<body class="min-h-screen flex items-center justify-center p-4">
 
-    <div class="section-info" id="sectionInfo" style="display: none;">
-      <h3 id="sectionTitle">Loading...</h3>
-      <p id="sectionDescription">Please wait while we load your video.</p>
-    </div>
-    
-    <div class="video-container hidden" id="videoContainer">
-      <div class="loading-overlay" id="loadingOverlay">
-        <div class="loader"></div>
-      </div>
-      <iframe 
-        id="videoPlayer" 
-        src=""
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen>
-      </iframe>
-    </div>
+    <main id="app-container" class="w-full max-w-3xl mx-auto">
 
-    <div class="button-container" id="buttonContainer">
-      <button class="start-btn" id="startButton" onclick="startEnrollment()">Start Enrollment</button>
-      <button class="agree-btn" id="agreeButton" onclick="sendResponse('agree')" style="display: none;">I Agree</button>
-      <button class="question-btn" id="questionButton" onclick="sendResponse('disagree')" style="display: none;">I Have a Question</button>
-    </div>
-
-    <div id="signatureContainer" style="display: none;">
-        <div class="signature-form">
-            <h2>Final Step: Signature</h2>
-            <p>Please type your full name below to serve as your digital signature, then type it again to confirm.</p>
-            <input type="text" id="signatureInput" placeholder="Enter your full name (as signature)">
-            <input type="text" id="printNameInput" placeholder="Print your full name">
-            <button class="submit-btn" onclick="submitSignature()">Submit Signature</button>
+        <!-- Initial Start Screen -->
+        <div id="start-screen" class="text-center fade-in">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">AI-Powered Video Enrollment</h1>
+            <p class="text-lg text-gray-600 mb-8 max-w-xl mx-auto">Please complete the following short video sections to finalize your enrollment.</p>
+            <button id="startButton" onclick="startEnrollment()" class="group inline-flex items-center justify-center rounded-full bg-indigo-600 px-8 py-4 text-lg font-semibold text-white transition-all duration-200 ease-in-out hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-lg hover:shadow-xl">
+                <svg class="w-6 h-6 mr-3 transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Start Enrollment
+            </button>
         </div>
-    </div>
 
-    <div id="messageContainer"></div>
-  </div>
+        <!-- Main Content Area (Video, Signature, Messages) -->
+        <div id="main-content" class="hidden">
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-500">
+                
+                <!-- Header with Progress -->
+                <div id="header-progress" class="p-6 border-b border-gray-200">
+                    <h2 id="sectionTitle" class="text-2xl font-bold text-gray-800">Loading...</h2>
+                    <p id="sectionDescription" class="text-gray-500 mt-1">Please wait a moment.</p>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mt-4">
+                        <div id="progressFill" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <div id="progressText" class="text-sm text-gray-500 text-right mt-1">Progress: 0%</div>
+                </div>
 
-  <script>
-    // --- Configuration ---
-    const WEBHOOK_URL = 'https://bigg804.app.n8n.cloud/webhook/video-onboarding';
-    
-    // --- State management ---
-    let currentSection = 0;
-    let sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-    let videoCompleted = false;
-    let isProcessing = false;
-    
-    // --- DOM elements ---
-    const videoContainer = document.getElementById('videoContainer');
-    const buttonContainer = document.getElementById('buttonContainer');
-    const signatureContainer = document.getElementById('signatureContainer');
-    const messageContainer = document.getElementById('messageContainer');
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    const videoPlayer = document.getElementById('videoPlayer');
-    const startButton = document.getElementById('startButton');
-    const agreeButton = document.getElementById('agreeButton');
-    const questionButton = document.getElementById('questionButton');
-    const progressFill = document.getElementById('progressFill');
-    const progressText = document.getElementById('progressText');
-    const progressContainer = document.getElementById('progressContainer');
-    const sectionInfo = document.getElementById('sectionInfo');
-    const sectionTitle = document.getElementById('sectionTitle');
-    const sectionDescription = document.getElementById('sectionDescription');
-    const signatureInput = document.getElementById('signatureInput');
-    const printNameInput = document.getElementById('printNameInput');
+                <!-- Video Player -->
+                <div id="videoContainer" class="aspect-w-16 aspect-h-9 bg-black relative">
+                    <div id="loadingOverlay" class="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-10">
+                        <div class="loader"></div>
+                    </div>
+                    <iframe id="videoPlayer" class="w-full h-full" src="" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+                </div>
+                
+                <!-- Signature Form -->
+                <div id="signatureContainer" class="p-8 hidden">
+                     <div class="text-center">
+                        <h2 class="text-2xl font-bold text-gray-800">Final Step: Signature</h2>
+                        <p class="text-gray-500 mt-2 mb-6">Please provide your e-signature to complete the agreement.</p>
+                    </div>
+                    <div class="space-y-4">
+                        <input type="text" id="signatureInput" placeholder="Type your full name (as signature)" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3">
+                        <input type="text" id="printNameInput" placeholder="Print your full name again to confirm" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3">
+                    </div>
+                </div>
 
+                <!-- Message Display Area -->
+                <div id="messageContainer" class="p-8 text-center hidden">
+                </div>
 
-    // --- UI Update Functions ---
+            </div>
 
-    function getYouTubeEmbedUrl(url) {
-      const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([^&\n?#]+)/);
-      return (videoId && videoId[1]) ? `https://www.youtube.com/embed/${videoId[1]}?enablejsapi=1&autoplay=1&rel=0` : url;
-    }
-
-    function updateProgress(percentage, current, total) {
-      progressFill.style.width = `${percentage}%`;
-      progressText.textContent = `Progress: ${percentage}% (Video ${current} of ${total})`;
-    }
-
-    function setLoading(show) {
-      loadingOverlay.classList.toggle('hidden', !show);
-    }
-
-    function showError(message) {
-      messageContainer.innerHTML = `<div class="error-message">${message}</div>`;
-      setTimeout(() => { messageContainer.innerHTML = ''; }, 5000);
-    }
-
-    function showMessage(title, content) {
-      progressContainer.style.display = 'none';
-      sectionInfo.style.display = 'none';
-      videoContainer.classList.add('hidden');
-      buttonContainer.classList.add('hidden');
-      signatureContainer.style.display = 'none';
-      
-      messageContainer.innerHTML = `
-        <div class="message">
-          <h2>${title}</h2>
-          <p>${content}</p>
+            <!-- Action Buttons Footer -->
+            <div id="buttonContainer" class="flex items-center justify-center space-x-4 mt-8">
+                 <button id="questionButton" onclick="sendResponse('disagree')" class="group inline-flex items-center justify-center rounded-full bg-amber-500 px-7 py-3 text-base font-semibold text-white transition-all duration-200 ease-in-out hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 shadow-md hover:shadow-lg">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.546-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    I Have a Question
+                </button>
+                <button id="agreeButton" onclick="sendResponse('agree')" class="group inline-flex items-center justify-center rounded-full bg-emerald-500 px-7 py-3 text-base font-semibold text-white transition-all duration-200 ease-in-out hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 shadow-md hover:shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    I Agree & Continue
+                </button>
+                 <button id="submitSignatureButton" onclick="submitSignature()" class="group hidden inline-flex items-center justify-center rounded-full bg-emerald-500 px-7 py-3 text-base font-semibold text-white transition-all duration-200 ease-in-out hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 shadow-md hover:shadow-lg">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Submit Signature
+                </button>
+            </div>
         </div>
-      `;
-    }
-
-    function showSignatureForm() {
-        progressContainer.style.display = 'none';
-        sectionInfo.style.display = 'none';
-        videoContainer.classList.add('hidden');
-        buttonContainer.classList.add('hidden');
-        signatureContainer.style.display = 'block';
-    }
+    </main>
 
 
-    // --- Core Logic ---
+    <script>
+        // --- Configuration & State ---
+        const WEBHOOK_URL = 'https://bigg804.app.n8n.cloud/webhook/video-onboarding';
+        const AppState = {
+            currentSection: 0,
+            sessionId: `session-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
+            videoCompleted: false,
+            isProcessing: false,
+        };
 
-    function loadVideo(videoUrl, title, description) {
-      videoCompleted = false;
-      
-      sectionTitle.textContent = title;
-      sectionDescription.textContent = description;
-      sectionInfo.style.display = 'block';
-      
-      videoContainer.classList.remove('hidden');
-      setLoading(true);
-      
-      videoPlayer.src = getYouTubeEmbedUrl(videoUrl);
-      
-      videoPlayer.onload = () => {
-        setLoading(false);
-        // In a real app, use the YouTube Player API for accurate completion tracking.
-        // For this demo, we use a timeout.
-        setTimeout(() => {
-          videoCompleted = true;
-          agreeButton.disabled = false;
-          buttonContainer.classList.add('visible');
-        }, 5000); // Enable 'Agree' after 5 seconds
-      };
-    }
+        // --- DOM Element Cache ---
+        const DOMElements = {
+            startScreen: document.getElementById('start-screen'),
+            mainContent: document.getElementById('main-content'),
+            sectionTitle: document.getElementById('sectionTitle'),
+            sectionDescription: document.getElementById('sectionDescription'),
+            progressFill: document.getElementById('progressFill'),
+            progressText: document.getElementById('progressText'),
+            videoContainer: document.getElementById('videoContainer'),
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            videoPlayer: document.getElementById('videoPlayer'),
+            signatureContainer: document.getElementById('signatureContainer'),
+            signatureInput: document.getElementById('signatureInput'),
+            printNameInput: document.getElementById('printNameInput'),
+            messageContainer: document.getElementById('messageContainer'),
+            buttonContainer: document.getElementById('buttonContainer'),
+            agreeButton: document.getElementById('agreeButton'),
+            questionButton: document.getElementById('questionButton'),
+            submitSignatureButton: document.getElementById('submitSignatureButton'),
+        };
 
-    async function startEnrollment() {
-      if (isProcessing) return;
-      
-      isProcessing = true;
-      startButton.disabled = true;
-      
-      try {
-        const response = await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: sessionId,
-            section: 0, // Always start with section 0
-            response: 'start'
-          })
-        });
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-        const data = await response.json();
+        // --- UI State Management ---
         
-        if (data.success && data.data && data.data.currentVideo) {
-          startButton.style.display = 'none';
-          agreeButton.style.display = 'inline-block';
-          questionButton.style.display = 'inline-block';
-          agreeButton.disabled = true;
-          questionButton.disabled = false;
-          
-          progressContainer.style.display = 'block';
-          updateProgress(
-            data.data.progress.completionPercentage,
-            data.data.progress.currentSection + 1,
-            data.data.progress.totalSections
-          );
-          
-          loadVideo(
-            data.data.currentVideo.url,
-            data.data.currentVideo.title,
-            data.data.currentVideo.description
-          );
-        } else {
-          showError(data.message || 'Failed to load video configuration. Please try again.');
-          startButton.disabled = false;
+        /**
+         * Manages the visibility and state of UI components based on the current app phase.
+         * @param {('START'|'VIDEO'|'SIGNATURE'|'MESSAGE')} state 
+         */
+        function updateUIState(state) {
+            DOMElements.startScreen.classList.toggle('hidden', state !== 'START');
+            DOMElements.mainContent.classList.toggle('hidden', state === 'START');
+
+            DOMElements.videoContainer.classList.toggle('hidden', state !== 'VIDEO');
+            DOMElements.signatureContainer.classList.toggle('hidden', state !== 'SIGNATURE');
+            DOMElements.messageContainer.classList.toggle('hidden', state !== 'MESSAGE');
+            DOMElements.buttonContainer.classList.toggle('hidden', state === 'START' || state === 'MESSAGE' || state === 'SIGNATURE');
+            document.getElementById('header-progress').style.display = (state === 'VIDEO' || state === 'SIGNATURE') ? 'block' : 'none';
+
+            if (state === 'SIGNATURE') {
+                DOMElements.agreeButton.classList.add('hidden');
+                DOMElements.questionButton.classList.add('hidden');
+                DOMElements.submitSignatureButton.classList.remove('hidden');
+                DOMElements.buttonContainer.classList.remove('hidden');
+            } else if (state === 'VIDEO') {
+                DOMElements.agreeButton.classList.remove('hidden');
+                DOMElements.questionButton.classList.remove('hidden');
+                DOMElements.submitSignatureButton.classList.add('hidden');
+            }
         }
-      } catch (error) {
-        console.error('Error starting enrollment:', error);
-        showError('Failed to connect to the enrollment system. Please check your connection and try again.');
-        startButton.disabled = false;
-      } finally {
-        isProcessing = false;
-      }
-    }
-
-    async function sendResponse(choice) {
-      if (isProcessing) return;
-      
-      if (choice === 'agree' && !videoCompleted) {
-        showError('Please watch the video before proceeding.');
-        return;
-      }
-
-      isProcessing = true;
-      agreeButton.disabled = true;
-      questionButton.disabled = true;
-      buttonContainer.classList.remove('visible');
-
-      try {
-        const response = await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: sessionId,
-            section: currentSection,
-            response: choice
-          })
-        });
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-        const data = await response.json();
         
-        if (data.success) {
-          handleAction(data.action, data);
-        } else {
-          showError(data.message || 'An error occurred. Please try again.');
-          agreeButton.disabled = !videoCompleted;
-          questionButton.disabled = false;
-          buttonContainer.classList.add('visible');
-        }
-      } catch (error) {
-        console.error('Error sending response:', error);
-        showError('Failed to submit your response. Please try again.');
-        agreeButton.disabled = !videoCompleted;
-        questionButton.disabled = false;
-        buttonContainer.classList.add('visible');
-      } finally {
-        isProcessing = false;
-      }
-    }
-
-    async function submitSignature() {
-        if (isProcessing) return;
-
-        const signature = signatureInput.value.trim();
-        const printName = printNameInput.value.trim();
-
-        if (!signature || !printName) {
-            showError("Please enter both your signature and printed name.");
-            return;
+        function updateProgress(percentage, current, total) {
+            DOMElements.progressFill.style.width = `${percentage}%`;
+            DOMElements.progressText.textContent = `Progress: ${percentage}% • Section ${current} of ${total}`;
         }
 
-        isProcessing = true;
+        function showMessage(title, content, type = 'success') {
+            const icon = type === 'success' ?
+                `<svg class="w-16 h-16 text-emerald-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>` :
+                `<svg class="w-16 h-16 text-amber-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
 
-        try {
-            const response = await fetch(WEBHOOK_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    sessionId: sessionId,
-                    response: 'submit_signature',
-                    signature: signature,
-                    printName: printName
-                })
+            DOMElements.messageContainer.innerHTML = `
+                ${icon}
+                <h2 class="text-3xl font-bold text-gray-800">${title}</h2>
+                <p class="text-gray-500 mt-2 text-base">${content}</p>
+            `;
+            updateUIState('MESSAGE');
+        }
+
+        function showError(message) {
+            // This could be a more elegant toast notification in a real app
+            alert(`Error: ${message}`);
+        }
+
+        // --- Core Logic ---
+
+        function loadVideo(videoUrl, title, description) {
+            AppState.videoCompleted = false;
+            DOMElements.agreeButton.disabled = true;
+            updateUIState('VIDEO');
+            
+            DOMElements.sectionTitle.textContent = title;
+            DOMElements.sectionDescription.textContent = description;
+            
+            DOMElements.loadingOverlay.classList.remove('hidden');
+            
+            const embedUrl = ((url) => {
+                const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([^&\n?#]+)/);
+                return (videoId && videoId[1]) ? `https://www.youtube.com/embed/${videoId[1]}?enablejsapi=1&autoplay=1&rel=0` : url;
+            })(videoUrl);
+
+            DOMElements.videoPlayer.src = embedUrl;
+            
+            DOMElements.videoPlayer.onload = () => {
+                DOMElements.loadingOverlay.classList.add('hidden');
+                // In production, use the YouTube IFrame Player API for accurate completion tracking.
+                // For this demo, we use a simple timeout.
+                setTimeout(() => {
+                    AppState.videoCompleted = true;
+                    DOMElements.agreeButton.disabled = false;
+                }, 5000); // Enable 'Agree' after 5 seconds
+            };
+        }
+
+        async function apiCall(body) {
+            AppState.isProcessing = true;
+            try {
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+                return await response.json();
+            } catch (error) {
+                console.error("API Call Error:", error);
+                showError("Could not connect to the enrollment system. Please check your network and try again.");
+                return null;
+            } finally {
+                AppState.isProcessing = false;
+            }
+        }
+
+        async function startEnrollment() {
+            if (AppState.isProcessing) return;
+            const data = await apiCall({
+                sessionId: AppState.sessionId,
+                section: 0,
+                response: 'start'
+            });
+            if (data && data.success) handleAction(data.action, data);
+        }
+
+        async function sendResponse(choice) {
+            if (AppState.isProcessing) return;
+            if (choice === 'agree' && !AppState.videoCompleted) {
+                showError('Please complete the video before agreeing.');
+                return;
+            }
+            DOMElements.agreeButton.disabled = true;
+            DOMElements.questionButton.disabled = true;
+
+            const data = await apiCall({
+                sessionId: AppState.sessionId,
+                section: AppState.currentSection,
+                response: choice
             });
 
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-            const data = await response.json();
-            if (data.success) {
+            if (data && data.success) {
                 handleAction(data.action, data);
             } else {
-                showError(data.message || 'Could not submit signature. Please try again.');
+                 DOMElements.agreeButton.disabled = !AppState.videoCompleted;
+                 DOMElements.questionButton.disabled = false;
             }
-        } catch (error) {
-            console.error('Error submitting signature:', error);
-            showError('Failed to submit your signature. Please check your connection and try again.');
-        } finally {
-            isProcessing = false;
         }
-    }
 
-    function handleAction(action, data) {
-        switch(action) {
-            case 'next_video':
-                currentSection = data.data.nextVideo.section;
-                updateProgress(
-                    data.data.progress.completionPercentage,
-                    data.data.progress.currentSection + 1,
-                    data.data.progress.totalSections
-                );
-                loadVideo(
-                    data.data.nextVideo.url,
-                    data.data.nextVideo.title,
-                    data.data.nextVideo.description
-                );
-                agreeButton.disabled = true;
-                questionButton.disabled = false;
-                break;
-            case 'request_signature':
-                showSignatureForm();
-                break;
-            case 'disagreement_logged':
-                showMessage('Thank You', data.message);
-                break;
-            case 'onboarding_complete':
-                showMessage('Enrollment Complete!', data.message);
-                break;
-            default:
-                showError('Received an unknown response from the server.');
+        async function submitSignature() {
+            if (AppState.isProcessing) return;
+            const signature = DOMElements.signatureInput.value.trim();
+            const printName = DOMElements.printNameInput.value.trim();
+
+            if (!signature || !printName) {
+                showError("Please provide both signature and printed name.");
+                return;
+            }
+
+            const data = await apiCall({
+                sessionId: AppState.sessionId,
+                response: 'submit_signature',
+                signature: signature,
+                printName: printName
+            });
+            
+            if (data && data.success) handleAction(data.action, data);
         }
-    }
 
-    window.addEventListener('load', () => {
-      buttonContainer.classList.add('visible');
-    });
-  </script>
+        function handleAction(action, data) {
+            switch (action) {
+                case 'start_enrollment':
+                case 'next_video':
+                    const videoData = data.data.currentVideo || data.data.nextVideo;
+                    const progressData = data.data.progress;
+                    AppState.currentSection = progressData.currentSection;
+                    updateProgress(progressData.completionPercentage, progressData.currentSection + 1, progressData.totalSections);
+                    loadVideo(videoData.url, videoData.title, videoData.description);
+                    break;
+                case 'request_signature':
+                    updateUIState('SIGNATURE');
+                    DOMElements.sectionTitle.textContent = "Final Step: Signature";
+                    DOMElements.sectionDescription.textContent = "Please review and sign below.";
+                    updateProgress(100, data.data.progress.totalSections, data.data.progress.totalSections);
+                    break;
+                case 'disagreement_logged':
+                    showMessage('Feedback Received', data.message, 'info');
+                    break;
+                case 'onboarding_complete':
+                    showMessage('Enrollment Complete!', data.message, 'success');
+                    break;
+                default:
+                    showError('Received an unrecognized response from the server.');
+            }
+        }
+
+        // Initialize UI
+        updateUIState('START');
+
+    </script>
 </body>
 </html>
