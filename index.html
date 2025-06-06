@@ -184,6 +184,9 @@
       aspect-ratio: 16/9;
       transform-style: preserve-3d;
       transition: transform 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .video-container:hover {
@@ -194,10 +197,22 @@
       display: none;
     }
 
-    iframe {
+    #videoPlayer {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #videoPlayer iframe {
       width: 100%;
       height: 100%;
       border: none;
+      position: absolute;
+      top: 0;
+      left: 0;
     }
 
     .loading-overlay {
@@ -631,34 +646,46 @@
     function createYouTubePlayer(videoId) {
       // Destroy existing player if any
       if (ytPlayer) {
-        ytPlayer.destroy();
+        try {
+          ytPlayer.destroy();
+        } catch (e) {
+          console.log('Error destroying player:', e);
+        }
       }
 
-      // Create iframe element
-      const iframe = document.createElement('div');
-      iframe.id = 'youtube-player';
+      // Clear the container
       videoPlayerDiv.innerHTML = '';
-      videoPlayerDiv.appendChild(iframe);
+      
+      // Create a new div for the player
+      const playerDiv = document.createElement('div');
+      playerDiv.id = 'youtube-player';
+      videoPlayerDiv.appendChild(playerDiv);
 
-      ytPlayer = new YT.Player('youtube-player', {
-        height: '100%',
-        width: '100%',
-        videoId: videoId,
-        playerVars: {
-          'autoplay': 1,
-          'controls': 1,
-          'disablekb': 0,
-          'modestbranding': 1,
-          'rel': 0,
-          'showinfo': 0,
-          'iv_load_policy': 3
-        },
-        events: {
-          'onReady': onPlayerReady,
-          'onStateChange': onPlayerStateChange,
-          'onError': onPlayerError
-        }
-      });
+      try {
+        ytPlayer = new YT.Player('youtube-player', {
+          height: '100%',
+          width: '100%',
+          videoId: videoId,
+          playerVars: {
+            'autoplay': 1,
+            'controls': 1,
+            'disablekb': 0,
+            'modestbranding': 1,
+            'rel': 0,
+            'showinfo': 0,
+            'iv_load_policy': 3,
+            'origin': window.location.origin
+          },
+          events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange,
+            'onError': onPlayerError
+          }
+        });
+      } catch (error) {
+        console.error('Error creating YouTube player:', error);
+        showError('Failed to initialize video player. Please refresh the page.');
+      }
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -832,6 +859,16 @@
       if (!videoId) {
         showError('Invalid video URL. Please contact support.');
         setLoading(false);
+        // Enable buttons anyway so user can continue
+        agreeButton.disabled = false;
+        questionButton.disabled = false;
+        return;
+      }
+
+      // Wait for YouTube API to be ready
+      if (typeof YT === 'undefined' || !YT.Player) {
+        console.log('YouTube API not ready, waiting...');
+        setTimeout(() => loadVideo(videoUrl, title, description), 1000);
         return;
       }
 
@@ -845,7 +882,7 @@
 
       agreeButton.disabled = true;
       questionButton.disabled = false;
-      buttonContainer.classList.remove('visible');
+      buttonContainer.classList.add('visible');
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -933,10 +970,14 @@
         agreeButton.disabled = true;
         questionButton.disabled = true;
       }
-      
-      buttonContainer.classList.remove('visible');
 
       try {
+        console.log('Sending response:', {
+          sessionId: sessionId,
+          section: currentSection,
+          response: choice
+        });
+
         const response = await fetch(WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -952,6 +993,7 @@
         }
 
         const data = await response.json();
+        console.log('Received response:', data);
 
         if (data.success) {
           handleSuccessfulResponse(data);
@@ -977,18 +1019,22 @@
     // Handle Different Response Types
     // ─────────────────────────────────────────────────────────────────────
     function handleSuccessfulResponse(data) {
+      console.log('Server response:', data);
+      
       switch (data.action) {
         case 'next_video':
           if (data.data && data.data.nextVideo) {
+            // Move to next section
             currentSection = data.data.nextVideo.section;
             
+            // Update progress
             updateProgress(
               data.data.progress.completionPercentage,
               data.data.progress.currentSection,
               data.data.progress.totalSections
             );
             
-            // Add a small delay for smooth transition
+            // Small delay for smooth transition
             setTimeout(() => {
               loadVideo(
                 data.data.nextVideo.url,
@@ -1002,13 +1048,17 @@
               agreeButton.disabled = true;
               questionButton.disabled = false;
             }, 500);
+          } else {
+            // If no next video but not complete, might need to handle differently
+            console.error('No next video provided but not complete');
+            showError('Unexpected response format. Please try again.');
           }
           break;
           
         case 'onboarding_complete':
           showMessage(
             'Enrollment Complete! 🎉',
-            data.message + (data.data.nextSteps ? `<br><br><strong>Next Steps:</strong><br>${data.data.nextSteps}` : ''),
+            data.message + (data.data && data.data.nextSteps ? `<br><br><strong>Next Steps:</strong><br>${data.data.nextSteps}` : ''),
             true
           );
           break;
@@ -1023,7 +1073,12 @@
           break;
           
         default:
-          throw new Error('Unexpected server action');
+          console.error('Unexpected server action:', data.action);
+          showError('Unexpected server response. Please try again.');
+          // Re-enable buttons
+          agreeButton.disabled = videoCompleted ? false : true;
+          questionButton.disabled = false;
+          buttonContainer.classList.add('visible');
       }
     }
 
