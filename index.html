@@ -29,7 +29,8 @@
     let sessionId = "sess-" + Math.random().toString(36).substring(2, 10);
 
     function startWorkflow() {
-      fetch("https://bigg804.app.n8n.cloud/webhook-test/video-onboarding", {
+      fetch(
+"https://bigg804.app.n8n.cloud/webhook/video-onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, section: currentSection, response: "start" })
