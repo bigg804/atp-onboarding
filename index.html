@@ -3,356 +3,769 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI-Powered Video Enrollment</title>
-    
-    <!-- Tailwind CSS for modern styling -->
+    <title>Video Onboarding - Consent Capture</title>
+    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts for premium typography -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Signature Pad library for drawing signatures -->
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <!-- YouTube Iframe API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <!-- Google Fonts for typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
     <style>
-        /* Custom styles to complement Tailwind */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5;
-            background-image:
-                radial-gradient(at 47% 33%, hsl(203.79, 100%, 89%) 0, transparent 59%),
-                radial-gradient(at 82% 65%, hsl(218.00, 100%, 85%) 0, transparent 55%);
+        body { font-family: 'Inter', sans-serif; }
+        /* Animation for views fading in */
+        .view { display: none; }
+        .view.active { display: block; animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Toast notification animations */
+        .toast {
+            animation: slideInRight 0.5s ease-out, fadeOut 0.5s ease-in 4.5s forwards;
         }
-
-        /* Animation classes */
-        .fade-in {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        .fade-in-up {
-            animation: fadeInUp 0.6s ease-out forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* Custom loader */
-        .loader {
-            width: 48px;
-            height: 48px;
-            border: 5px solid #FFF;
-            border-bottom-color: #6366F1;
-            border-radius: 50%;
-            display: inline-block;
-            box-sizing: border-box;
-            animation: rotation 1s linear infinite;
-        }
-
-        @keyframes rotation {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        /* Ensure canvas is responsive and has a border */
+        #signature-canvas {
+            width: 100%;
+            height: 200px;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            cursor: crosshair;
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="bg-slate-50 text-slate-800 antialiased">
 
-    <main id="app-container" class="w-full max-w-3xl mx-auto">
+    <!-- Container for toast notifications -->
+    <div id="toast-container" class="fixed top-6 right-6 z-[100] w-full max-w-sm space-y-3"></div>
 
-        <!-- Initial Start Screen -->
-        <div id="start-screen" class="text-center fade-in">
-            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">AI-Powered Video Enrollment</h1>
-            <p class="text-lg text-gray-600 mb-8 max-w-xl mx-auto">Please complete the following short video sections to finalize your enrollment.</p>
-            <button id="startButton" onclick="startEnrollment()" class="group inline-flex items-center justify-center rounded-full bg-indigo-600 px-8 py-4 text-lg font-semibold text-white transition-all duration-200 ease-in-out hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-lg hover:shadow-xl">
-                <svg class="w-6 h-6 mr-3 transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                Start Enrollment
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-3xl bg-white rounded-2xl shadow-2xl shadow-slate-200/50 overflow-hidden">
+            <!-- App Header -->
+            <header class="p-6 border-b border-slate-200 flex justify-between items-center">
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900" data-translate="appTitle">Onboarding Portal</h1>
+                    <p class="text-sm text-slate-500" data-translate="appSubtitle">Please complete all steps</p>
+                </div>
+                <!-- Language switcher -->
+                <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+                    <button id="lang-en" aria-label="Switch to English" class="px-3 py-1 text-sm font-semibold rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">EN</button>
+                    <button id="lang-es" aria-label="Switch to Spanish" class="px-3 py-1 text-sm font-semibold rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">ES</button>
+                </div>
+            </header>
+
+            <!-- Main Content Area where views are rendered -->
+            <main id="app-container" class="p-6 md:p-8">
+                <!-- App views will be injected here by the script -->
+            </main>
+        </div>
+    </div>
+    
+    <!-- TEMPLATES for different views -->
+    <template id="identification-view">
+        <div class="text-center view active">
+            <h2 class="text-2xl font-bold text-slate-800 mb-2" data-translate="welcomeTitle">Begin Your Enrollment</h2>
+            <p class="text-slate-600 mb-8" data-translate="welcomeMessage">Enter your name or ID to start the process.</p>
+            <div class="max-w-md mx-auto">
+                <label for="user-identifier-input" class="sr-only" data-translate="userIdentifierLabel">Your Name or ID</label>
+                <input type="text" id="user-identifier-input" class="w-full text-center px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="John Doe or 12345-ABC">
+                <button id="start-btn" aria-label="Start Onboarding" class="w-full mt-4 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <span data-translate="startButton">Start Onboarding</span>
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <template id="video-view">
+        <div class="view">
+            <div class="mb-4">
+                <p id="step-counter" class="text-sm font-semibold text-blue-600 mb-1"></p>
+                <h2 id="video-title" class="text-2xl font-bold text-slate-800"></h2>
+            </div>
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-200 rounded-full h-2.5 mb-6 overflow-hidden">
+                <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-indigo-500 h-2.5 rounded-full transition-all duration-500 ease-out"></div>
+            </div>
+            <!-- Video Player Container -->
+            <div class="relative bg-black rounded-lg overflow-hidden aspect-video mb-6 shadow-xl">
+                <div id="video-player" class="absolute top-0 left-0 w-full h-full"></div>
+            </div>
+            <!-- Action Buttons -->
+            <div id="action-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button id="agree-btn" aria-label="Agree and Continue" class="bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" disabled>
+                    <span data-translate="agreeButton">I Agree & Continue</span>
+                </button>
+                <button id="question-btn" aria-label="I have a question" class="bg-amber-500 text-white py-3 rounded-lg font-semibold hover:bg-amber-600 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                    <span data-translate="questionButton">I Have a Question</span>
+                </button>
+            </div>
+        </div>
+    </template>
+    
+    <template id="paused-view">
+        <div class="view text-center p-8">
+            <svg class="w-16 h-16 mx-auto mb-4 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9v6m-4.5 0V9M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2" data-translate="pausedTitle">Session Paused</h2>
+            <p class="text-slate-600 mb-6" data-translate="pausedMessage">Your progress has been saved. A team member will contact you shortly to answer your question. You can close this window.</p>
+            <div class="bg-slate-100 p-4 rounded-lg">
+                <p class="text-sm text-slate-600" data-translate="pausedSessionId">Your Session ID is:</p>
+                <p id="paused-session-id" class="font-mono text-lg text-slate-800 break-all"></p>
+            </div>
+        </div>
+    </template>
+
+    <template id="signature-view">
+         <div class="view">
+            <h2 class="text-2xl font-bold text-slate-800 mb-2" data-translate="signatureTitle">Final Step: Your Signature</h2>
+            <p class="text-slate-600 mb-8" data-translate="signatureMessage">Please provide your signature to complete onboarding.</p>
+            <div class="space-y-6">
+                <div>
+                    <label for="printed-name-input" class="block text-sm font-medium text-slate-700 mb-1" data-translate="printedNameLabel">Printed Name</label>
+                    <input type="text" id="printed-name-input" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                </div>
+                <div>
+                    <label for="signature-canvas" class="block text-sm font-medium text-slate-700 mb-1" data-translate="drawSignature">Draw Your Signature Below</label>
+                    <div class="relative">
+                        <canvas id="signature-canvas"></canvas>
+                        <button id="clear-signature-btn" aria-label="Clear Signature" class="absolute top-2 right-2 text-sm text-blue-600 hover:text-blue-800" data-translate="clearButton">Clear</button>
+                    </div>
+                </div>
+                <div class="bg-slate-50 rounded-lg p-4 text-sm text-slate-600">
+                    <p data-translate="agreementText">By clicking "Submit", I acknowledge I have watched all videos and agree to the terms presented.</p>
+                </div>
+                <button id="submit-signature-btn" aria-label="Submit Signature" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <span data-translate="submitSignature">Submit Signature</span>
+                </button>
+            </div>
+        </div>
+    </template>
+    
+    <template id="completion-view">
+        <div class="view text-center p-8">
+            <svg class="w-16 h-16 mx-auto mb-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2" data-translate="completionTitle">All Set!</h2>
+            <p class="text-slate-600 mb-8" data-translate="completionMessage">You've completed onboarding. A copy of your signed agreement will be sent to your email.</p>
+            <button id="start-over-btn" aria-label="Start Over" class="mt-4 bg-slate-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-slate-700 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500">
+                <span data-translate="startOverButton">Start Over</span>
             </button>
         </div>
+    </template>
 
-        <!-- Main Content Area (Video, Signature, Messages) -->
-        <div id="main-content" class="hidden">
-            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-500">
-                
-                <!-- Header with Progress -->
-                <div id="header-progress" class="p-6 border-b border-gray-200">
-                    <h2 id="sectionTitle" class="text-2xl font-bold text-gray-800">Loading...</h2>
-                    <p id="sectionDescription" class="text-gray-500 mt-1">Please wait a moment.</p>
-                    <div class="w-full bg-gray-200 rounded-full h-2.5 mt-4">
-                        <div id="progressFill" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                    <div id="progressText" class="text-sm text-gray-500 text-right mt-1">Progress: 0%</div>
+    <template id="loading-view">
+        <div class="view flex flex-col items-center justify-center p-12 text-center">
+             <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p id="loading-text" class="mt-4 text-slate-600 font-semibold" data-translate="loadingText">Processing...</p>
+        </div>
+    </template>
+
+    <template id="error-view">
+         <div class="view text-center p-8">
+            <svg class="w-16 h-16 mx-auto mb-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            <h2 id="error-title" class="text-2xl font-bold text-slate-800 mb-2">An Error Occurred</h2>
+            <p id="error-message" class="text-slate-600 mb-8">Could not load application configuration.</p>
+            <button id="retry-btn" aria-label="Retry" class="mt-4 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition">
+                Retry
+            </button>
+        </div>
+    </template>
+    
+    <!-- Modal for asking a question -->
+    <template id="question-modal-view">
+        <div id="question-modal-overlay" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg animate-fadeIn">
+                <h2 class="text-xl font-bold text-slate-800 mb-4" data-translate="questionModalTitle">Do you have a question?</h2>
+                <p class="text-slate-600 mb-4" data-translate="questionModalMessage">Please type your question below. A team member will get back to you shortly.</p>
+                <textarea id="question-textarea" class="w-full px-3 py-2 border border-slate-300 rounded-lg h-28 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" data-translate-placeholder="questionPlaceholder"></textarea>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button id="cancel-question-btn" class="bg-slate-200 text-slate-800 px-4 py-2 rounded-lg font-semibold hover:bg-slate-300 transition" data-translate="cancelButton">Cancel</button>
+                    <button id="submit-question-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition" data-translate="submitQuestionButton">Submit Question</button>
                 </div>
-
-                <!-- Video Player -->
-                <div id="videoContainer" class="aspect-w-16 aspect-h-9 bg-black relative">
-                    <div id="loadingOverlay" class="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-10">
-                        <div class="loader"></div>
-                    </div>
-                    <iframe id="videoPlayer" class="w-full h-full" src="" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
-                </div>
-                
-                <!-- Signature Form -->
-                <div id="signatureContainer" class="p-8 hidden">
-                     <div class="text-center">
-                        <h2 class="text-2xl font-bold text-gray-800">Final Step: Signature</h2>
-                        <p class="text-gray-500 mt-2 mb-6">Please provide your e-signature to complete the agreement.</p>
-                    </div>
-                    <div class="space-y-4">
-                        <input type="text" id="signatureInput" placeholder="Type your full name (as signature)" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3">
-                        <input type="text" id="printNameInput" placeholder="Print your full name again to confirm" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3">
-                    </div>
-                </div>
-
-                <!-- Message Display Area -->
-                <div id="messageContainer" class="p-8 text-center hidden">
-                </div>
-
-            </div>
-
-            <!-- Action Buttons Footer -->
-            <div id="buttonContainer" class="flex items-center justify-center space-x-4 mt-8">
-                 <button id="questionButton" onclick="sendResponse('disagree')" class="group inline-flex items-center justify-center rounded-full bg-amber-500 px-7 py-3 text-base font-semibold text-white transition-all duration-200 ease-in-out hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 shadow-md hover:shadow-lg">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.546-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    I Have a Question
-                </button>
-                <button id="agreeButton" onclick="sendResponse('agree')" class="group inline-flex items-center justify-center rounded-full bg-emerald-500 px-7 py-3 text-base font-semibold text-white transition-all duration-200 ease-in-out hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 shadow-md hover:shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    I Agree & Continue
-                </button>
-                 <button id="submitSignatureButton" onclick="submitSignature()" class="group hidden inline-flex items-center justify-center rounded-full bg-emerald-500 px-7 py-3 text-base font-semibold text-white transition-all duration-200 ease-in-out hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 shadow-md hover:shadow-lg">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Submit Signature
-                </button>
             </div>
         </div>
-    </main>
+    </template>
 
 
     <script>
-        // --- Configuration & State ---
-        const WEBHOOK_URL = 'https://bigg804.app.n8n.cloud/webhook/video-onboarding';
-        const AppState = {
-            currentSection: 0,
-            sessionId: `session-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
-            videoCompleted: false,
-            isProcessing: false,
-        };
+    class OnboardingApp {
+        constructor() {
+            // --- CORE PROPERTIES ---
+            this.state = {}; // Holds the user's session state
+            this.appContainer = document.getElementById('app-container');
+            this.STORAGE_KEY = 'onboarding-state';
+            this.signaturePad = null;
+            this.resizeTimeout = null;
 
-        // --- DOM Element Cache ---
-        const DOMElements = {
-            startScreen: document.getElementById('start-screen'),
-            mainContent: document.getElementById('main-content'),
-            sectionTitle: document.getElementById('sectionTitle'),
-            sectionDescription: document.getElementById('sectionDescription'),
-            progressFill: document.getElementById('progressFill'),
-            progressText: document.getElementById('progressText'),
-            videoContainer: document.getElementById('videoContainer'),
-            loadingOverlay: document.getElementById('loadingOverlay'),
-            videoPlayer: document.getElementById('videoPlayer'),
-            signatureContainer: document.getElementById('signatureContainer'),
-            signatureInput: document.getElementById('signatureInput'),
-            printNameInput: document.getElementById('printNameInput'),
-            messageContainer: document.getElementById('messageContainer'),
-            buttonContainer: document.getElementById('buttonContainer'),
-            agreeButton: document.getElementById('agreeButton'),
-            questionButton: document.getElementById('questionButton'),
-            submitSignatureButton: document.getElementById('submitSignatureButton'),
-        };
+            // --- APP CONFIGURATION ---
+            this.config = {
+                webhookUrl: 'https://bigg804.app.n8n.cloud/webhook/video-onboarding',
+                // NOTE: You'll need to create this new endpoint in your n8n workflow
+                resumeUrl: 'https://bigg804.app.n8n.cloud/webhook/resume-onboarding', 
+                totalVideos: 6
+            };
 
-        // --- UI State Management ---
+            // --- LOCAL DATA ---
+            this.videos = [
+                { title: "Part 1 of Achieve Test prep terms and conditions", videoId: "EKxdPl-Ld0c" },
+                { title: "Part 2 of Achieve Test Preps terms and conditions", videoId: "0jce4tanHFg" },
+                { title: "Part 3 of Achieve test Preps Terms and conditions", videoId: "-899WTNMfIw" },
+                { title: "Part 4 of achieve Test Preps Terms and conditions", videoId: "G1HerzEj_LY" },
+                { title: "Part 5 of Achieve test Preps terms and conditions", videoId: "gNpEetenX4Y" },
+                { title: "Part 6 of Achieve Test preps terms and conditions", videoId: "rMgQFwRS7q4" }
+            ];
+            this.translations = {
+                 en: {
+                    appTitle: 'Onboarding Portal', appSubtitle: 'Please complete all steps',
+                    welcomeTitle: 'Begin Your Enrollment', welcomeMessage: 'Enter your name or ID to start the process.',
+                    startButton: 'Start Onboarding', userIdentifierLabel: 'Your Name or ID',
+                    stepCounterText: 'Step {1} of {2}',
+                    agreeButton: 'I Agree & Continue', questionButton: 'I Have a Question',
+                    questionModalTitle: 'Do you have a question?',
+                    questionModalMessage: 'Please type your question below. A team member will get back to you shortly.',
+                    questionPlaceholder: 'Type your question here...',
+                    cancelButton: 'Cancel',
+                    submitQuestionButton: 'Submit Question',
+                    pausedTitle: 'Session Paused',
+                    pausedMessage: 'Your progress has been saved. A team member will contact you shortly to answer your question. You can close this window.',
+                    pausedSessionId: 'Your Session ID is:',
+                    signatureTitle: 'Final Step: Your Signature', signatureMessage: 'Please provide your signature to complete onboarding.',
+                    printedNameLabel: 'Printed Name', drawSignature: 'Draw Your Signature Below', clearButton: 'Clear',
+                    agreementText: 'By clicking "Submit", I acknowledge I have watched all videos and agree to the terms presented.',
+                    submitSignature: 'Submit Signature',
+                    loadingText: 'Processing...', loadingVideos: 'Loading videos...', resumingSession: 'Resuming your session...',
+                    completionTitle: 'All Set!', completionMessage: "You've completed onboarding. A copy of your signed agreement will be sent to your email.", startOverButton: 'Start Over',
+                    alert_enter_name: 'Please enter your printed name.', alert_provide_signature: 'Please provide a signature.', alert_provide_id: 'Please provide your Name or ID.',
+                    alert_enter_question: 'Please enter your question.',
+                    alert_network_error: 'Network communication failed. Please try again.', alert_server_error: 'An invalid response was received from the server. Please try again.',
+                    alert_resume_failed: 'Could not resume your session. Please start over.',
+                },
+                es: {
+                    appTitle: 'Portal de Incorporación', appSubtitle: 'Por favor complete todos los pasos',
+                    welcomeTitle: 'Inicie su Inscripción', welcomeMessage: 'Ingrese su nombre o ID para iniciar el proceso.',
+                    startButton: 'Iniciar Incorporación', userIdentifierLabel: 'Su Nombre o ID',
+                    stepCounterText: 'Paso {1} de {2}',
+                    agreeButton: 'Acepto y Continuo', questionButton: 'Tengo una Pregunta',
+                    questionModalTitle: '¿Tiene una pregunta?',
+                    questionModalMessage: 'Por favor, escriba su pregunta abajo. Un miembro del equipo se pondrá en contacto con usted en breve.',
+                    questionPlaceholder: 'Escriba su pregunta aquí...',
+                    cancelButton: 'Cancelar',
+                    submitQuestionButton: 'Enviar Pregunta',
+                    pausedTitle: 'Sesión en Pausa',
+                    pausedMessage: 'Su progreso ha sido guardado. Un miembro del equipo se comunicará con usted en breve para responder a su pregunta. Puede cerrar esta ventana.',
+                    pausedSessionId: 'Su ID de sesión es:',
+                    signatureTitle: 'Paso Final: Su Firma', signatureMessage: 'Proporcione su firma para completar la incorporación.',
+                    printedNameLabel: 'Nombre en Imprenta', drawSignature: 'Dibuje su Firma Abajo', clearButton: 'Limpiar',
+                    agreementText: 'Al hacer clic en "Enviar", reconozco que he visto todos los videos y acepto los términos presentados.',
+                    submitSignature: 'Enviar Firma',
+                    loadingText: 'Procesando...', loadingVideos: 'Cargando videos...', resumingSession: 'Reanudando su sesión...',
+                    completionTitle: '¡Todo Listo!', completionMessage: 'Ha completado la incorporación. Se enviará una copia de su acuerdo firmado a su correo electrónico.', startOverButton: 'Empezar de Nuevo',
+                    alert_enter_name: 'Por favor, ingrese su nombre en imprenta.', alert_provide_signature: 'Por favor, proporcione una firma.', alert_provide_id: 'Por favor, ingrese su Nombre o ID.',
+                    alert_enter_question: 'Por favor, ingrese su pregunta.',
+                    alert_network_error: 'La comunicación de red falló. Por favor, inténtelo de nuevo.', alert_server_error: 'Se recibió una respuesta no válida del servidor. Por favor, inténtelo de nuevo.',
+                    alert_resume_failed: 'No se pudo reanudar su sesión. Por favor, empiece de nuevo.',
+                }
+            };
+            
+            this.init();
+        }
+
+        /**
+         * Initializes the application.
+         */
+        async init() {
+            this.setupGlobalListeners();
+            const urlParams = new URLSearchParams(window.location.search);
+            const resumeSessionId = urlParams.get('sessionId');
+
+            if (resumeSessionId) {
+                await this.resumeSession(resumeSessionId);
+            } else {
+                this.loadStateAndRender();
+            }
+        }
+
+        /**
+         * Sets up global event listeners for the application.
+         */
+        setupGlobalListeners() {
+            this.appContainer.addEventListener('click', (e) => this.handleAction(e));
+            document.getElementById('lang-en').addEventListener('click', () => this.setLanguage('en'));
+            document.getElementById('lang-es').addEventListener('click', () => this.setLanguage('es'));
+            // Debounced resize handler for the signature canvas
+            window.addEventListener('resize', () => {
+                if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
+                this.resizeTimeout = setTimeout(() => this.resizeSignatureCanvas(), 250);
+            });
+        }
         
         /**
-         * Manages the visibility and state of UI components based on the current app phase.
-         * @param {('START'|'VIDEO'|'SIGNATURE'|'MESSAGE')} state 
+         * Loads state from sessionStorage or initializes a default state, then renders the correct view.
          */
-        function updateUIState(state) {
-            DOMElements.startScreen.classList.toggle('hidden', state !== 'START');
-            DOMElements.mainContent.classList.toggle('hidden', state === 'START');
+        loadStateAndRender() {
+            const savedState = sessionStorage.getItem(this.STORAGE_KEY);
+            const defaultState = {
+                sessionId: this.generateSessionId(),
+                userIdentifier: '',
+                currentSection: 0,
+                language: 'en',
+                status: 'new',
+                view: 'identification',
+            };
 
-            DOMElements.videoContainer.classList.toggle('hidden', state !== 'VIDEO');
-            DOMElements.signatureContainer.classList.toggle('hidden', state !== 'SIGNATURE');
-            DOMElements.messageContainer.classList.toggle('hidden', state !== 'MESSAGE');
-            DOMElements.buttonContainer.classList.toggle('hidden', state === 'START' || state === 'MESSAGE' || state === 'SIGNATURE');
-            document.getElementById('header-progress').style.display = (state === 'VIDEO' || state === 'SIGNATURE') ? 'block' : 'none';
+            this.state = savedState ? { ...defaultState, ...JSON.parse(savedState) } : defaultState;
+            
+            // Initialize non-serializable properties.
+            this.state.ytPlayer = null;
+            this.state.videoPlayStartTime = null;
 
-            if (state === 'SIGNATURE') {
-                DOMElements.agreeButton.classList.add('hidden');
-                DOMElements.questionButton.classList.add('hidden');
-                DOMElements.submitSignatureButton.classList.remove('hidden');
-                DOMElements.buttonContainer.classList.remove('hidden');
-            } else if (state === 'VIDEO') {
-                DOMElements.agreeButton.classList.remove('hidden');
-                DOMElements.questionButton.classList.remove('hidden');
-                DOMElements.submitSignatureButton.classList.add('hidden');
+            this.setLanguage(this.state.language, false);
+            this.renderView(this.state.view, { 
+                section: this.state.currentSection,
+            });
+        }
+
+        /**
+         * Fetches a saved session state from the backend to resume.
+         */
+        async resumeSession(sessionId) {
+            this.renderView('loading', { messageKey: 'resumingSession' });
+            try {
+                const response = await fetch(`${this.config.resumeUrl}?sessionId=${sessionId}`);
+                if (!response.ok) throw new Error('Failed to fetch session data.');
+
+                const savedState = await response.json();
+                if (savedState && savedState.sessionId) {
+                    this.state = savedState;
+                    this.saveState(); // Save the resumed state to session storage
+                    this.renderView('video', { section: this.state.currentSection });
+                } else {
+                    throw new Error('Invalid session data received.');
+                }
+            } catch (error) {
+                console.error('Resume failed:', error);
+                this.showToast('error', this.translate('alert_resume_failed'));
+                // Clear bad query param and start fresh
+                window.history.replaceState({}, document.title, window.location.pathname);
+                this.loadStateAndRender();
+            }
+        }
+
+        /**
+         * Generates a unique session ID.
+         */
+        generateSessionId() {
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                return crypto.randomUUID();
+            }
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                const r = Math.random() * 16 | 0;
+                const v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+        
+        /**
+         * Prepares a serializable version of the state for storage.
+         */
+        getSerializableState() {
+            const { ytPlayer, videoPlayStartTime, ...stateToSave } = this.state;
+            return stateToSave;
+        }
+
+        /**
+         * Saves the current application state to sessionStorage.
+         */
+        saveState() {
+            sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.getSerializableState()));
+        }
+
+        /**
+         * Clears the session state and resets the application to the initial view.
+         */
+        clearStateAndReset() {
+            sessionStorage.removeItem(this.STORAGE_KEY);
+            window.history.replaceState({}, document.title, window.location.pathname);
+            this.loadStateAndRender();
+        }
+        
+        /**
+         * Renders a specific view into the app container using a template.
+         */
+        renderView(viewName, data = {}) {
+             this.state.view = viewName;
+             if (this.state.ytPlayer && typeof this.state.ytPlayer.destroy === 'function') {
+                this.state.ytPlayer.destroy();
+                this.state.ytPlayer = null;
+            }
+            const template = document.getElementById(`${viewName}-view`);
+            if (!template) {
+                this.renderErrorView('Template Error', `The view template for "${viewName}" is missing.`);
+                return;
+            }
+            
+            // Clear previous view and render new one
+            this.appContainer.innerHTML = '';
+            const viewFragment = template.content.cloneNode(true);
+            const viewElement = viewFragment.querySelector('.view');
+            
+            this.appContainer.appendChild(viewFragment);
+            
+            // Post-render setup
+            if (viewElement) viewElement.classList.add('active');
+            this.updateAllUIText();
+
+            // Call specific setup functions for complex views.
+            if (viewName === 'video') this.setupVideoView(data);
+            if (viewName === 'signature') this.setupSignatureView();
+            if (viewName === 'paused') {
+                document.getElementById('paused-session-id').textContent = this.state.sessionId;
+            }
+            if (viewName === 'loading') {
+                 document.getElementById('loading-text').textContent = this.translate(data.messageKey || 'loadingText');
+            }
+        }
+
+        /**
+         * Renders a generic error view.
+         */
+        renderErrorView(title, message) {
+            this.renderView('error');
+            document.getElementById('error-title').textContent = title;
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('retry-btn').onclick = () => window.location.reload();
+        }
+
+        /**
+         * Sets up the video view with the correct video, title, and progress.
+         */
+        setupVideoView(data) {
+            if (data.section === undefined || data.section < 0 || data.section >= this.videos.length) {
+                this.renderView('signature');
+                return;
+            }
+            this.state.currentSection = data.section;
+            this.state.videoPlayStartTime = null; // Reset start time for the new video
+            const video = this.videos[data.section];
+            const completionPercentage = Math.round(((data.section) / this.config.totalVideos) * 100)
+            
+            document.getElementById('video-title').textContent = video.title;
+            document.getElementById('step-counter').textContent = this.translate('stepCounterText', { 1: data.section + 1, 2: this.config.totalVideos });
+            document.getElementById('progress-bar').style.width = `${completionPercentage}%`;
+            
+            this.loadYouTubePlayer(video.videoId);
+        }
+        
+        /**
+         * Initializes the signature pad.
+         */
+        setupSignatureView() {
+            const canvas = document.getElementById('signature-canvas');
+            this.signaturePad = new SignaturePad(canvas, {
+                penColor: 'rgb(0, 0, 0)'
+            });
+            this.resizeSignatureCanvas(); // Initial resize to fix coordinates
+
+            // Prefill printed name if available
+            const printedNameInput = document.getElementById('printed-name-input');
+            if(this.state.userIdentifier) printedNameInput.value = this.state.userIdentifier;
+        }
+
+        /**
+         * Correctly resizes the signature canvas to match its display size,
+         * preventing coordinate mismatches and preserving the drawing.
+         */
+        resizeSignatureCanvas() {
+            if (!this.signaturePad) return;
+            const canvas = this.signaturePad.canvas;
+            const data = this.signaturePad.toData(); // Save signature data
+            
+            const ratio =  Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+            
+            this.signaturePad.fromData(data); // Restore signature data
+        }
+
+        /**
+         * Shows the modal for the user to ask a question.
+         */
+        showQuestionModal() {
+            if (document.getElementById('question-modal-overlay')) return;
+
+            const template = document.getElementById('question-modal-view');
+            const modalFragment = template.content.cloneNode(true);
+            const modal = modalFragment.querySelector('#question-modal-overlay');
+            
+            // Translate elements within the modal before appending
+            modal.querySelectorAll('[data-translate]').forEach(el => el.textContent = this.translate(el.dataset.translate));
+            const textarea = modal.querySelector('#question-textarea');
+            textarea.placeholder = this.translate('questionPlaceholder');
+
+            modal.querySelector('#submit-question-btn').addEventListener('click', () => this.submitQuestion());
+            modal.querySelector('#cancel-question-btn').addEventListener('click', () => this.closeQuestionModal());
+
+            document.body.appendChild(modalFragment);
+            textarea.focus();
+        }
+        
+        /**
+         * Closes and removes the question modal from the DOM.
+         */
+        closeQuestionModal() {
+            const modal = document.getElementById('question-modal-overlay');
+            if (modal) modal.remove();
+        }
+
+        /**
+         * Handles the submission of the question form.
+         */
+        submitQuestion() {
+            const textarea = document.getElementById('question-textarea');
+            const questionText = textarea.value.trim();
+
+            if (!questionText) {
+                this.showToast('error', this.translate('alert_enter_question'));
+                return;
+            }
+
+            const videoInfo = this.videos[this.state.currentSection];
+            const duration = this.state.videoPlayStartTime ? Math.round((Date.now() - this.state.videoPlayStartTime) / 1000) : 0;
+            const baseUrl = window.location.origin + window.location.pathname;
+
+            this.sendRequest({
+                response: 'disagree',
+                status: 'paused',
+                videoTitle: videoInfo.title,
+                videoWatchedDuration: duration,
+                startTime: this.state.videoPlayStartTime ? new Date(this.state.videoPlayStartTime).toISOString() : null,
+                userQuestion: questionText,
+                resumeUrl: `${baseUrl}?sessionId=${this.state.sessionId}`
+            });
+
+            this.closeQuestionModal();
+        }
+
+        /**
+         * Handles all button clicks within the app.
+         */
+        handleAction(e) {
+            const button = e.target.closest('button');
+            if (!button || button.disabled) return;
+            
+            const actionMap = {
+                'start-btn': this.startOnboarding,
+                'agree-btn': this.handleAgreement,
+                'question-btn': this.showQuestionModal,
+                'submit-signature-btn': this.handleSubmitSignature,
+                'clear-signature-btn': () => this.signaturePad.clear(),
+                'start-over-btn': this.clearStateAndReset
+            };
+            const action = actionMap[button.id];
+            if (action) {
+                e.preventDefault();
+                action.call(this);
             }
         }
         
-        function updateProgress(percentage, current, total) {
-            DOMElements.progressFill.style.width = `${percentage}%`;
-            DOMElements.progressText.textContent = `Progress: ${percentage}% • Section ${current} of ${total}`;
-        }
-
-        function showMessage(title, content, type = 'success') {
-            const icon = type === 'success' ?
-                `<svg class="w-16 h-16 text-emerald-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>` :
-                `<svg class="w-16 h-16 text-amber-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-
-            DOMElements.messageContainer.innerHTML = `
-                ${icon}
-                <h2 class="text-3xl font-bold text-gray-800">${title}</h2>
-                <p class="text-gray-500 mt-2 text-base">${content}</p>
-            `;
-            updateUIState('MESSAGE');
-        }
-
-        function showError(message) {
-            // This could be a more elegant toast notification in a real app
-            alert(`Error: ${message}`);
-        }
-
-        // --- Core Logic ---
-
-        function loadVideo(videoUrl, title, description) {
-            AppState.videoCompleted = false;
-            DOMElements.agreeButton.disabled = true;
-            updateUIState('VIDEO');
-            
-            DOMElements.sectionTitle.textContent = title;
-            DOMElements.sectionDescription.textContent = description;
-            
-            DOMElements.loadingOverlay.classList.remove('hidden');
-            
-            const embedUrl = ((url) => {
-                const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([^&\n?#]+)/);
-                return (videoId && videoId[1]) ? `https://www.youtube.com/embed/${videoId[1]}?enablejsapi=1&autoplay=1&rel=0` : url;
-            })(videoUrl);
-
-            DOMElements.videoPlayer.src = embedUrl;
-            
-            DOMElements.videoPlayer.onload = () => {
-                DOMElements.loadingOverlay.classList.add('hidden');
-                // In production, use the YouTube IFrame Player API for accurate completion tracking.
-                // For this demo, we use a simple timeout.
-                setTimeout(() => {
-                    AppState.videoCompleted = true;
-                    DOMElements.agreeButton.disabled = false;
-                }, 5000); // Enable 'Agree' after 5 seconds
-            };
-        }
-
-        async function apiCall(body) {
-            AppState.isProcessing = true;
-            try {
-                const response = await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-                if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
-                return await response.json();
-            } catch (error) {
-                console.error("API Call Error:", error);
-                showError("Could not connect to the enrollment system. Please check your network and try again.");
-                return null;
-            } finally {
-                AppState.isProcessing = false;
-            }
-        }
-
-        async function startEnrollment() {
-            if (AppState.isProcessing) return;
-            const data = await apiCall({
-                sessionId: AppState.sessionId,
-                section: 0,
-                response: 'start'
-            });
-            if (data && data.success) handleAction(data.action, data);
-        }
-
-        async function sendResponse(choice) {
-            if (AppState.isProcessing) return;
-            if (choice === 'agree' && !AppState.videoCompleted) {
-                showError('Please complete the video before agreeing.');
+        startOnboarding() {
+            const identifier = document.getElementById('user-identifier-input').value.trim();
+            if (!identifier) {
+                this.showToast('error', this.translate('alert_provide_id'));
                 return;
             }
-            DOMElements.agreeButton.disabled = true;
-            DOMElements.questionButton.disabled = true;
-
-            const data = await apiCall({
-                sessionId: AppState.sessionId,
-                section: AppState.currentSection,
-                response: choice
-            });
-
-            if (data && data.success) {
-                handleAction(data.action, data);
-            } else {
-                 DOMElements.agreeButton.disabled = !AppState.videoCompleted;
-                 DOMElements.questionButton.disabled = false;
-            }
+            this.state.userIdentifier = identifier;
+            this.sendRequest({ response: 'start', status: 'started' });
         }
-
-        async function submitSignature() {
-            if (AppState.isProcessing) return;
-            const signature = DOMElements.signatureInput.value.trim();
-            const printName = DOMElements.printNameInput.value.trim();
-
-            if (!signature || !printName) {
-                showError("Please provide both signature and printed name.");
+        
+        handleAgreement() {
+            const duration = this.state.videoPlayStartTime ? Math.round((Date.now() - this.state.videoPlayStartTime) / 1000) : 0;
+            const videoInfo = this.videos[this.state.currentSection];
+            this.sendRequest({
+                response: 'agree',
+                status: 'in-progress',
+                videoWatchedDuration: duration,
+                videoTitle: videoInfo.title,
+                startTime: this.state.videoPlayStartTime ? new Date(this.state.videoPlayStartTime).toISOString() : null
+            });
+        }
+        
+        handleSubmitSignature() {
+            const printedName = document.getElementById('printed-name-input')?.value.trim();
+            if (!printedName) {
+                this.showToast('error', this.translate('alert_enter_name'));
+                return;
+            }
+            if (this.signaturePad.isEmpty()) {
+                this.showToast('error', this.translate('alert_provide_signature'));
                 return;
             }
 
-            const data = await apiCall({
-                sessionId: AppState.sessionId,
+            const signatureImage = this.signaturePad.toDataURL('image/png');
+            this.sendRequest({
                 response: 'submit_signature',
-                signature: signature,
-                printName: printName
+                status: 'completed',
+                printedName: printedName,
+                signatureData: signatureImage
             });
+        }
+        
+        /**
+         * Sends a POST request to the n8n webhook.
+         */
+        async sendRequest(payload) {
+            this.renderView('loading', { messageKey: payload.response === 'start' ? 'loadingVideos' : 'loadingText' });
             
-            if (data && data.success) handleAction(data.action, data);
+            const requestBody = { ...this.state, ...payload, timestamp: new Date().toISOString() };
+            delete requestBody.ytPlayer;
+            delete requestBody.videoPlayStartTime;
+            delete requestBody.view;
+
+            try {
+                const response = await fetch(this.config.webhookUrl, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody),
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                this.handleApiResponse(data, payload.status);
+            } catch (error) {
+                console.error("API Request Failed:", error);
+                this.showToast('error', this.translate('alert_network_error'));
+                this.loadStateAndRender(); 
+            }
         }
 
-        function handleAction(action, data) {
+        /**
+         * Handles the response from the n8n webhook.
+         */
+        handleApiResponse(response, status) {
+            if (!response || response.success === false) {
+                this.showToast('error', response.error || this.translate('alert_server_error'));
+                this.loadStateAndRender();
+                return;
+            }
+            const { action, data = {} } = response;
+            this.state.currentSection = data.section ?? this.state.currentSection;
+            this.state.status = status || this.state.status;
+            this.saveState();
+            
             switch (action) {
-                case 'start_enrollment':
                 case 'next_video':
-                    const videoData = data.data.currentVideo || data.data.nextVideo;
-                    const progressData = data.data.progress;
-                    AppState.currentSection = progressData.currentSection;
-                    updateProgress(progressData.completionPercentage, progressData.currentSection + 1, progressData.totalSections);
-                    loadVideo(videoData.url, videoData.title, videoData.description);
+                    this.renderView('video', { section: data.section ?? 0 });
                     break;
                 case 'request_signature':
-                    updateUIState('SIGNATURE');
-                    DOMElements.sectionTitle.textContent = "Final Step: Signature";
-                    DOMElements.sectionDescription.textContent = "Please review and sign below.";
-                    updateProgress(100, data.data.progress.totalSections, data.data.progress.totalSections);
-                    break;
-                case 'disagreement_logged':
-                    showMessage('Feedback Received', data.message, 'info');
+                    this.renderView('signature');
                     break;
                 case 'onboarding_complete':
-                    showMessage('Enrollment Complete!', data.message, 'success');
+                    this.renderView('completion');
+                    break;
+                case 'disagreement_logged':
+                    this.renderView('paused');
                     break;
                 default:
-                    showError('Received an unrecognized response from the server.');
+                    this.showToast('error', this.translate('alert_server_error'));
+                    this.loadStateAndRender();
             }
         }
 
-        // Initialize UI
-        updateUIState('START');
+        /**
+         * Loads the YouTube player.
+         */
+        loadYouTubePlayer(videoId) {
+            if (!window.YT) {
+                 this.renderErrorView('Player Error', 'The YouTube player script could not be loaded.');
+                 return;
+            }
+            try {
+                this.state.ytPlayer = new YT.Player('video-player', {
+                    videoId,
+                    playerVars: { 'playsinline': 1, 'autoplay': 1, 'controls': 0, 'rel': 0, 'modestbranding': 1, 'showinfo': 0, 'origin': window.location.origin },
+                    events: {
+                        'onReady': e => e.target.playVideo(),
+                        'onStateChange': e => {
+                            if (e.data === YT.PlayerState.PLAYING && !this.state.videoPlayStartTime) {
+                                this.state.videoPlayStartTime = Date.now();
+                            }
+                            if (e.data === YT.PlayerState.ENDED) {
+                                document.getElementById('agree-btn').disabled = false;
+                                document.getElementById('action-buttons').classList.add('animate-pulse');
+                            }
+                        },
+                        'onError': e => {
+                            console.error('YouTube player error:', e.data);
+                            this.showToast('error', 'Video failed to load. Please refresh.');
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to initialize YouTube player:', error);
+                this.showToast('error', 'Video player could not be initialized.');
+            }
+        }
+        
+        // --- UI & TRANSLATION METHODS ---
+        
+        translate(key, vars = {}) {
+            let text = (this.translations[this.state.language]?.[key]) || key;
+            Object.keys(vars).forEach(varKey => {
+                text = text.replace(`{${varKey}}`, vars[varKey]);
+            });
+            return text;
+        }
 
+        setLanguage(lang, shouldSave = true) {
+            this.state.language = lang;
+            document.documentElement.lang = lang;
+            ['en', 'es'].forEach(l => {
+                const btn = document.getElementById(`lang-${l}`);
+                btn.classList.toggle('bg-blue-600', l === lang);
+                btn.classList.toggle('text-white', l === lang);
+            });
+            this.updateAllUIText();
+            if (shouldSave) this.saveState();
+        }
+
+        updateAllUIText() {
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                el.textContent = this.translate(el.dataset.translate);
+            });
+            // Update placeholders separately
+            document.querySelectorAll('[data-translate-placeholder]').forEach(el => {
+                el.placeholder = this.translate(el.dataset.translatePlaceholder);
+            });
+
+            if (this.state.view === 'video') {
+                document.getElementById('step-counter').textContent = this.translate('stepCounterText', { 1: this.state.currentSection + 1, 2: this.config.totalVideos });
+            }
+        }
+        
+        showToast(type, message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-blue-500' };
+            toast.className = `toast text-white px-4 py-3 rounded-lg shadow-lg`;
+            toast.classList.add(colors[type] || 'bg-slate-700');
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+    }
+
+    function onYouTubeIframeAPIReady() {
+        window.onboardingApp = new OnboardingApp();
+    }
+    
     </script>
 </body>
 </html>
