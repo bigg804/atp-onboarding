@@ -339,12 +339,26 @@
                 if (!response.ok) throw new Error('Failed to fetch session data.');
 
                 const data = await response.json();
-                if (data && data.success && data.state) {
-                    this.state = data.state;
-                    this.saveState(); // Save the resumed state to session storage
+                // FIX: The backend sends a flat object, not one nested under 'state'.
+                // We check for the needed properties directly on the response data.
+                if (data && data.success && typeof data.currentSection !== 'undefined') {
+                    // Reconstruct the state from the flat backend response.
+                    const resumedState = {
+                        sessionId: sessionId,
+                        userIdentifier: data.userIdentifier,
+                        currentSection: parseInt(data.currentSection, 10), // Ensure it's a number
+                        language: data.language || 'en',
+                        status: 'resumed',
+                        view: 'video'
+                    };
+                    this.state = resumedState;
+                    this.saveState(); // Save the reconstructed state
+                    
                     this.renderView('video', { 
                         section: this.state.currentSection,
-                        startTime: this.videos[this.state.currentSection].startTime || 0
+                        // The YouTube player API uses 'start' parameter for seconds.
+                        // We get this from our local `videos` array based on the resumed section.
+                        startTime: this.videos[this.state.currentSection]?.startTime || 0
                     });
                 } else {
                     throw new Error(data.error || 'Invalid session data received.');
