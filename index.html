@@ -205,19 +205,18 @@
             // --- APP CONFIGURATION ---
             this.config = {
                 webhookUrl: 'https://bigg804.app.n8n.cloud/webhook/video-onboarding',
-                // NOTE: You'll need to create this new endpoint in your n8n workflow
                 resumeUrl: 'https://bigg804.app.n8n.cloud/webhook/resume-onboarding', 
                 totalVideos: 6
             };
-
-            // --- LOCAL DATA ---
+            
+            // --- DATA ---
             this.videos = [
-                { title: "Part 1 of Achieve Test prep terms and conditions", videoId: "EKxdPl-Ld0c" },
-                { title: "Part 2 of Achieve Test Preps terms and conditions", videoId: "0jce4tanHFg" },
-                { title: "Part 3 of Achieve test Preps Terms and conditions", videoId: "-899WTNMfIw" },
-                { title: "Part 4 of achieve Test Preps Terms and conditions", videoId: "G1HerzEj_LY" },
-                { title: "Part 5 of Achieve test Preps terms and conditions", videoId: "gNpEetenX4Y" },
-                { title: "Part 6 of Achieve Test preps terms and conditions", videoId: "rMgQFwRS7q4" }
+                { title: "Part 1 of Achieve Test prep terms and conditions", videoId: "EKxdPl-Ld0c", startTime: 0 },
+                { title: "Part 2 of Achieve Test Preps terms and conditions", videoId: "0jce4tanHFg", startTime: 90 },
+                { title: "Part 3 of Achieve test Preps Terms and conditions", videoId: "-899WTNMfIw", startTime: 180 },
+                { title: "Part 4 of achieve Test Preps Terms and conditions", videoId: "G1HerzEj_LY", startTime: 270 },
+                { title: "Part 5 of Achieve test Preps terms and conditions", videoId: "gNpEetenX4Y", startTime: 360 },
+                { title: "Part 6 of Achieve Test preps terms and conditions", videoId: "rMgQFwRS7q4", startTime: 450 }
             ];
             this.translations = {
                  en: {
@@ -339,13 +338,16 @@
                 const response = await fetch(`${this.config.resumeUrl}?sessionId=${sessionId}`);
                 if (!response.ok) throw new Error('Failed to fetch session data.');
 
-                const savedState = await response.json();
-                if (savedState && savedState.sessionId) {
-                    this.state = savedState;
+                const data = await response.json();
+                if (data && data.success && data.state) {
+                    this.state = data.state;
                     this.saveState(); // Save the resumed state to session storage
-                    this.renderView('video', { section: this.state.currentSection });
+                    this.renderView('video', { 
+                        section: this.state.currentSection,
+                        startTime: this.videos[this.state.currentSection].startTime || 0
+                    });
                 } else {
-                    throw new Error('Invalid session data received.');
+                    throw new Error(data.error || 'Invalid session data received.');
                 }
             } catch (error) {
                 console.error('Resume failed:', error);
@@ -458,7 +460,7 @@
             document.getElementById('step-counter').textContent = this.translate('stepCounterText', { 1: data.section + 1, 2: this.config.totalVideos });
             document.getElementById('progress-bar').style.width = `${completionPercentage}%`;
             
-            this.loadYouTubePlayer(video.videoId);
+            this.loadYouTubePlayer(video.videoId, data.startTime);
         }
         
         /**
@@ -477,20 +479,19 @@
         }
 
         /**
-         * Correctly resizes the signature canvas to match its display size,
-         * preventing coordinate mismatches and preserving the drawing.
+         * Correctly resizes the signature canvas to match its display size.
          */
         resizeSignatureCanvas() {
             if (!this.signaturePad) return;
             const canvas = this.signaturePad.canvas;
-            const data = this.signaturePad.toData(); // Save signature data
+            const data = this.signaturePad.toData();
             
             const ratio =  Math.max(window.devicePixelRatio || 1, 1);
             canvas.width = canvas.offsetWidth * ratio;
             canvas.height = canvas.offsetHeight * ratio;
             canvas.getContext("2d").scale(ratio, ratio);
             
-            this.signaturePad.fromData(data); // Restore signature data
+            this.signaturePad.fromData(data);
         }
 
         /**
@@ -503,7 +504,6 @@
             const modalFragment = template.content.cloneNode(true);
             const modal = modalFragment.querySelector('#question-modal-overlay');
             
-            // Translate elements within the modal before appending
             modal.querySelectorAll('[data-translate]').forEach(el => el.textContent = this.translate(el.dataset.translate));
             const textarea = modal.querySelector('#question-textarea');
             textarea.placeholder = this.translate('questionPlaceholder');
@@ -515,17 +515,11 @@
             textarea.focus();
         }
         
-        /**
-         * Closes and removes the question modal from the DOM.
-         */
         closeQuestionModal() {
             const modal = document.getElementById('question-modal-overlay');
             if (modal) modal.remove();
         }
 
-        /**
-         * Handles the submission of the question form.
-         */
         submitQuestion() {
             const textarea = document.getElementById('question-textarea');
             const questionText = textarea.value.trim();
@@ -682,15 +676,29 @@
         /**
          * Loads the YouTube player.
          */
-        loadYouTubePlayer(videoId) {
+        loadYouTubePlayer(videoId, startTime = 0) {
             if (!window.YT) {
                  this.renderErrorView('Player Error', 'The YouTube player script could not be loaded.');
                  return;
             }
+
+            const playerVars = { 
+                'playsinline': 1, 
+                'autoplay': 1, 
+                'controls': 0, 
+                'rel': 0, 
+                'modestbranding': 1, 
+                'showinfo': 0, 
+                'origin': window.location.origin 
+            };
+            if(startTime > 0) {
+                playerVars.start = startTime;
+            }
+
             try {
                 this.state.ytPlayer = new YT.Player('video-player', {
                     videoId,
-                    playerVars: { 'playsinline': 1, 'autoplay': 1, 'controls': 0, 'rel': 0, 'modestbranding': 1, 'showinfo': 0, 'origin': window.location.origin },
+                    playerVars: playerVars,
                     events: {
                         'onReady': e => e.target.playVideo(),
                         'onStateChange': e => {
