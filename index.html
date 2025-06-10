@@ -342,7 +342,6 @@
         async resumeSession(sessionId) {
             this.renderView('loading', { messageKey: 'resumingSession' });
             try {
-                console.debug(`Attempting to resume session with ID: ${sessionId}`);
                 const response = await fetch(`${this.config.resumeUrl}?sessionId=${sessionId}`);
                 if (!response.ok) throw new Error('Failed to fetch session data.');
 
