@@ -59,8 +59,8 @@
                 <!-- Initial loading state to prevent flash of empty content -->
                 <div class="view active flex flex-col items-center justify-center p-12 text-center">
                      <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     <p class="mt-4 text-slate-600 font-semibold">Loading...</p>
                 </div>
@@ -163,8 +163,8 @@
     <template id="loading-view">
         <div class="view flex flex-col items-center justify-center p-12 text-center">
              <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             <p id="loading-text" class="mt-4 text-slate-600 font-semibold" data-translate="loadingText">Processing...</p>
         </div>
@@ -227,55 +227,55 @@
             ];
             this.translations = {
                  en: {
-                    appTitle: 'Onboarding Portal', appSubtitle: 'Please complete all steps',
-                    welcomeTitle: 'Begin Your Enrollment', welcomeMessage: 'Enter your name or ID to start the process.',
-                    startButton: 'Start Onboarding', userIdentifierLabel: 'Your Name or ID',
-                    stepCounterText: 'Step {1} of {2}',
-                    agreeButton: 'I Agree & Continue', questionButton: 'I Have a Question',
-                    questionModalTitle: 'Do you have a question?',
-                    questionModalMessage: 'Please type your question below. A team member will get back to you shortly.',
-                    questionPlaceholder: 'Type your question here...',
-                    cancelButton: 'Cancel',
-                    submitQuestionButton: 'Submit Question',
-                    pausedTitle: 'Session Paused',
-                    pausedMessage: 'Your progress has been saved. A team member will contact you shortly to answer your question. You can close this window.',
-                    pausedSessionId: 'Your Session ID is:',
-                    signatureTitle: 'Final Step: Your Signature', signatureMessage: 'Please provide your signature to complete onboarding.',
-                    printedNameLabel: 'Printed Name', drawSignature: 'Draw Your Signature Below', clearButton: 'Clear',
-                    agreementText: 'By clicking "Submit", I acknowledge I have watched all videos and agree to the terms presented.',
-                    submitSignature: 'Submit Signature',
-                    loadingText: 'Processing...', loadingVideos: 'Loading videos...', resumingSession: 'Resuming your session...',
-                    completionTitle: 'All Set!', completionMessage: "You've completed onboarding. A copy of your signed agreement will be sent to your email.", startOverButton: 'Start Over',
-                    alert_enter_name: 'Please enter your printed name.', alert_provide_signature: 'Please provide a signature.', alert_provide_id: 'Please provide your Name or ID.',
-                    alert_enter_question: 'Please enter your question.',
-                    alert_network_error: 'Network communication failed. Please try again.', alert_server_error: 'An invalid response was received from the server. Please try again.',
-                    alert_resume_failed: 'Could not resume your session. Please start over.',
-                },
-                es: {
-                    appTitle: 'Portal de Incorporación', appSubtitle: 'Por favor complete todos los pasos',
-                    welcomeTitle: 'Inicie su Inscripción', welcomeMessage: 'Ingrese su nombre o ID para iniciar el proceso.',
-                    startButton: 'Iniciar Incorporación', userIdentifierLabel: 'Su Nombre o ID',
-                    stepCounterText: 'Paso {1} de {2}',
-                    agreeButton: 'Acepto y Continuo', questionButton: 'Tengo una Pregunta',
-                    questionModalTitle: '¿Tiene una pregunta?',
-                    questionModalMessage: 'Por favor, escriba su pregunta abajo. Un miembro del equipo se pondrá en contacto con usted en breve.',
-                    questionPlaceholder: 'Escriba su pregunta aquí...',
-                    cancelButton: 'Cancelar',
-                    submitQuestionButton: 'Enviar Pregunta',
-                    pausedTitle: 'Sesión en Pausa',
-                    pausedMessage: 'Su progreso ha sido guardado. Un miembro del equipo se comunicará con usted en breve para responder a su pregunta. Puede cerrar esta ventana.',
-                    pausedSessionId: 'Su ID de sesión es:',
-                    signatureTitle: 'Paso Final: Su Firma', signatureMessage: 'Proporcione su firma para completar la incorporación.',
-                    printedNameLabel: 'Nombre en Imprenta', drawSignature: 'Dibuje su Firma Abajo', clearButton: 'Limpiar',
-                    agreementText: 'Al hacer clic en "Enviar", reconozco que he visto todos los videos y acepto los términos presentados.',
-                    submitSignature: 'Enviar Firma',
-                    loadingText: 'Procesando...', loadingVideos: 'Cargando videos...', resumingSession: 'Reanudando su sesión...',
-                    completionTitle: '¡Todo Listo!', completionMessage: 'Ha completado la incorporación. Se enviará una copia de su acuerdo firmado a su correo electrónico.', startOverButton: 'Empezar de Nuevo',
-                    alert_enter_name: 'Por favor, ingrese su nombre en imprenta.', alert_provide_signature: 'Por favor, proporcione una firma.', alert_provide_id: 'Por favor, ingrese su Nombre o ID.',
-                    alert_enter_question: 'Por favor, ingrese su pregunta.',
-                    alert_network_error: 'La comunicación de red falló. Por favor, inténtelo de nuevo.', alert_server_error: 'Se recibió una respuesta no válida del servidor. Por favor, inténtelo de nuevo.',
-                    alert_resume_failed: 'No se pudo reanudar su sesión. Por favor, empiece de nuevo.',
-                }
+                     appTitle: 'Onboarding Portal', appSubtitle: 'Please complete all steps',
+                     welcomeTitle: 'Begin Your Enrollment', welcomeMessage: 'Enter your name or ID to start the process.',
+                     startButton: 'Start Onboarding', userIdentifierLabel: 'Your Name or ID',
+                     stepCounterText: 'Step {1} of {2}',
+                     agreeButton: 'I Agree & Continue', questionButton: 'I Have a Question',
+                     questionModalTitle: 'Do you have a question?',
+                     questionModalMessage: 'Please type your question below. A team member will get back to you shortly.',
+                     questionPlaceholder: 'Type your question here...',
+                     cancelButton: 'Cancel',
+                     submitQuestionButton: 'Submit Question',
+                     pausedTitle: 'Session Paused',
+                     pausedMessage: 'Your progress has been saved. A team member will contact you shortly to answer your question. You can close this window.',
+                     pausedSessionId: 'Your Session ID is:',
+                     signatureTitle: 'Final Step: Your Signature', signatureMessage: 'Please provide your signature to complete onboarding.',
+                     printedNameLabel: 'Printed Name', drawSignature: 'Draw Your Signature Below', clearButton: 'Clear',
+                     agreementText: 'By clicking "Submit", I acknowledge I have watched all videos and agree to the terms presented.',
+                     submitSignature: 'Submit Signature',
+                     loadingText: 'Processing...', loadingVideos: 'Loading videos...', resumingSession: 'Resuming your session...',
+                     completionTitle: 'All Set!', completionMessage: "You've completed onboarding. A copy of your signed agreement will be sent to your email.", startOverButton: 'Start Over',
+                     alert_enter_name: 'Please enter your printed name.', alert_provide_signature: 'Please provide a signature.', alert_provide_id: 'Please provide your Name or ID.',
+                     alert_enter_question: 'Please enter your question.',
+                     alert_network_error: 'Network communication failed. Please try again.', alert_server_error: 'An invalid response was received from the server. Please try again.',
+                     alert_resume_failed: 'Could not resume your session. Please start over.',
+                 },
+                 es: {
+                     appTitle: 'Portal de Incorporación', appSubtitle: 'Por favor complete todos los pasos',
+                     welcomeTitle: 'Inicie su Inscripción', welcomeMessage: 'Ingrese su nombre o ID para iniciar el proceso.',
+                     startButton: 'Iniciar Incorporación', userIdentifierLabel: 'Su Nombre o ID',
+                     stepCounterText: 'Paso {1} de {2}',
+                     agreeButton: 'Acepto y Continuo', questionButton: 'Tengo una Pregunta',
+                     questionModalTitle: '¿Tiene una pregunta?',
+                     questionModalMessage: 'Por favor, escriba su pregunta abajo. Un miembro del equipo se pondrá en contacto con usted en breve.',
+                     questionPlaceholder: 'Escriba su pregunta aquí...',
+                     cancelButton: 'Cancelar',
+                     submitQuestionButton: 'Enviar Pregunta',
+                     pausedTitle: 'Sesión en Pausa',
+                     pausedMessage: 'Su progreso ha sido guardado. Un miembro del equipo se comunicará con usted en breve para responder a su pregunta. Puede cerrar esta ventana.',
+                     pausedSessionId: 'Su ID de sesión es:',
+                     signatureTitle: 'Paso Final: Su Firma', signatureMessage: 'Proporcione su firma para completar la incorporación.',
+                     printedNameLabel: 'Nombre en Imprenta', drawSignature: 'Dibuje su Firma Abajo', clearButton: 'Limpiar',
+                     agreementText: 'Al hacer clic en "Enviar", reconozco que he visto todos los videos y acepto los términos presentados.',
+                     submitSignature: 'Enviar Firma',
+                     loadingText: 'Procesando...', loadingVideos: 'Cargando videos...', resumingSession: 'Reanudando su sesión...',
+                     completionTitle: '¡Todo Listo!', completionMessage: 'Ha completado la incorporación. Se enviará una copia de su acuerdo firmado a su correo electrónico.', startOverButton: 'Empezar de Nuevo',
+                     alert_enter_name: 'Por favor, ingrese su nombre en imprenta.', alert_provide_signature: 'Por favor, proporcione una firma.', alert_provide_id: 'Por favor, ingrese su Nombre o ID.',
+                     alert_enter_question: 'Por favor, ingrese su pregunta.',
+                     alert_network_error: 'La comunicación de red falló. Por favor, inténtelo de nuevo.', alert_server_error: 'Se recibió una respuesta no válida del servidor. Por favor, inténtelo de nuevo.',
+                     alert_resume_failed: 'No se pudo reanudar su sesión. Por favor, empiece de nuevo.',
+                 }
             };
             
             this.init();
@@ -363,8 +363,7 @@
                     this.saveState();
                     
                     this.renderView('video', { 
-                        section: this.state.currentSection,
-                        startTime: startTime
+                        section: this.state.currentSection
                     });
 
                 } else {
@@ -422,9 +421,9 @@
         renderView(viewName, data = {}) {
              this.state.view = viewName;
              if (this.state.ytPlayer && typeof this.state.ytPlayer.destroy === 'function') {
-                this.state.ytPlayer.destroy();
-                this.state.ytPlayer = null;
-            }
+                 this.state.ytPlayer.destroy();
+                 this.state.ytPlayer = null;
+             }
             const template = document.getElementById(`${viewName}-view`);
             if (!template) {
                 this.renderErrorView('Template Error', `The view template for "${viewName}" is missing.`);
@@ -687,6 +686,9 @@
                     break;
                 case 'disagreement_logged':
                     this.renderView('paused');
+                    break;
+                case 'resume_session':
+                    this.renderView('video', { section: data.currentSection });
                     break;
                 default:
                     this.showToast('error', this.translate('alert_server_error'));
