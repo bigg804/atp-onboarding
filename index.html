@@ -339,34 +339,40 @@
                 if (!response.ok) throw new Error('Failed to fetch session data.');
 
                 const data = await response.json();
-                // FIX: The backend sends a flat object, not one nested under 'state'.
-                // We check for the needed properties directly on the response data.
-                if (data && data.success && typeof data.currentSection !== 'undefined') {
-                    // Reconstruct the state from the flat backend response.
+                const section = data.currentSection ?? data.section;
+
+                if (data && data.success && typeof section !== 'undefined') {
+                    const sectionNumber = parseInt(section, 10);
+                    const startTime = this.videos[sectionNumber]?.startTime || 0;
+
                     const resumedState = {
                         sessionId: sessionId,
                         userIdentifier: data.userIdentifier,
-                        currentSection: parseInt(data.currentSection, 10), // Ensure it's a number
+                        currentSection: sectionNumber,
                         language: data.language || 'en',
                         status: 'resumed',
                         view: 'video'
                     };
                     this.state = resumedState;
-                    this.saveState(); // Save the reconstructed state
+                    this.saveState();
                     
                     this.renderView('video', { 
                         section: this.state.currentSection,
-                        // The YouTube player API uses 'start' parameter for seconds.
-                        // We get this from our local `videos` array based on the resumed section.
-                        startTime: this.videos[this.state.currentSection]?.startTime || 0
+                        startTime: startTime
                     });
+
+                    // Force the player to reload this section’s video
+                    console.debug('Resuming section', section, 'startTime', startTime);
+                    const video = this.videos[this.state.currentSection];
+                    console.debug('Loading video ID', video.videoId, 'at startTime', startTime);
+                    this.loadYouTubePlayer(video.videoId, startTime);
+
                 } else {
                     throw new Error(data.error || 'Invalid session data received.');
                 }
             } catch (error) {
                 console.error('Resume failed:', error);
                 this.showToast('error', this.translate('alert_resume_failed'));
-                // Clear bad query param and start fresh
                 window.history.replaceState({}, document.title, window.location.pathname);
                 this.loadStateAndRender();
             }
@@ -461,6 +467,7 @@
          * Sets up the video view with the correct video, title, and progress.
          */
         setupVideoView(data) {
+            console.debug('setupVideoView called for section', data.section, 'startTime', data.startTime);
             if (data.section === undefined || data.section < 0 || data.section >= this.videos.length) {
                 this.renderView('signature');
                 return;
