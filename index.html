@@ -117,7 +117,7 @@
             <p class="text-slate-600 mb-6" data-translate="pausedMessage">Your progress has been saved. A team member will contact you shortly to answer your question. You can close this window.</p>
             <div class="bg-slate-100 p-4 rounded-lg">
                 <p class="text-sm text-slate-600" data-translate="pausedResumeLink">Use this link to resume later:</p>
-                <input id="resume-link-input" type="text" readonly class="w-full mt-2 p-2 font-mono text-sm bg-slate-200 border-slate-300 rounded text-center">
+                <a id="resume-link" href="#" class="font-mono text-sm text-blue-600 hover:underline break-all" target="_blank" rel="noopener noreferrer"></a>
             </div>
         </div>
     </template>
@@ -306,7 +306,7 @@
          */
         async resumeSession(sessionId, videoSection) {
             this.renderView('loading', { messageKey: 'resumingSession' });
-            const compositeKey = `${sessionId}:${videoSection}`;
+            const compositeKey = `${sessionId}_${videoSection}`;
             try {
                 // GET from the resume endpoint using the composite key.
                 const response = await fetch(`${this.config.resumeUrl}?compositeKey=${compositeKey}`);
@@ -464,10 +464,13 @@
             if (viewName === 'video') this.setupVideoView(data);
             if (viewName === 'signature') this.setupSignatureView();
             if (viewName === 'paused') {
-                // Generate the resume link with sessionId and videoSection from the current state.
-                const resumeUrl = `${window.location.origin}${window.location.pathname}?sessionId=${this.state.sessionId}&videoSection=${this.state.currentSection}`;
-                const resumeLinkInput = document.getElementById('resume-link-input');
-                if (resumeLinkInput) resumeLinkInput.value = resumeUrl;
+                const compositeKey = `${this.state.sessionId}_${this.state.currentSection}`;
+                const resumeUrl = `${window.location.origin}${window.location.pathname}?sessionId=${this.state.sessionId}&videoSection=${this.state.currentSection}&compositeKey=${compositeKey}`;
+                const resumeLinkAnchor = document.getElementById('resume-link');
+                if (resumeLinkAnchor) {
+                    resumeLinkAnchor.href = resumeUrl;
+                    resumeLinkAnchor.textContent = resumeUrl;
+                }
             }
             if (viewName === 'loading') {
                  document.getElementById('loading-text').textContent = this.translate(data.messageKey || 'loadingText');
