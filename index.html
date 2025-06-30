@@ -308,7 +308,7 @@
             this.renderView('loading', { messageKey: 'resumingSession' });
             const compositeKey = `${sessionId}:${videoSection}`;
             try {
-                // Per instructions, GET from the resume endpoint using the composite key.
+                // GET from the resume endpoint using the composite key.
                 const response = await fetch(`${this.config.resumeUrl}?compositeKey=${compositeKey}`);
                 if (!response.ok) {
                     throw new Error(`Server responded with status: ${response.status}`);
@@ -317,10 +317,10 @@
                 
                 const sessionData = Array.isArray(data) ? data[0]?.json : data.json || data;
 
-                // The primary requirement is to find `lastTimestamp` in the response.
                 if (sessionData && typeof sessionData.lastTimestamp !== 'undefined') {
                     const lastTimestamp = sessionData.lastTimestamp || 0;
 
+                    // Set state locally first, needed for the subsequent log POST.
                     this.state = {
                         sessionId: sessionId,
                         userIdentifier: sessionData.userIdentifier || '',
@@ -329,30 +329,48 @@
                         status: 'resumed',
                         view: 'video'
                     };
-                    this.saveState();
+                    
+                    // Log the resume event back to n8n before rendering the view to avoid UI flash.
+                    try {
+                        await fetch(this.config.webhookUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                ...this.getSerializableState(),
+                                response: 'resume',
+                                status: 'in-progress',
+                                timestamp: new Date().toISOString(),
+                                lastActivity: new Date().toISOString(),
+                                videoTitle: this.videos[videoSection].title,
+                                videoWatchedDuration: sessionData.lastTimestamp
+                            })
+                        });
+                    } catch (logError) {
+                        // A logging failure is not critical to the user's experience.
+                        console.error('Failed to log resume event, but proceeding with session:', logError);
+                    }
 
-                    // Load the correct section and seek to the retrieved timestamp.
+                    // Now that logging is attempted, save state and render the video.
+                    this.saveState();
                     this.renderView('video', { 
                         section: videoSection,
                         startTime: lastTimestamp 
                     });
-
-                    // Notify the backend that the session is now active again.
-                    this.sendRequest({
-                        response: 'resume',
-                        status: 'in-progress'
-                    }, true); // Fire-and-forget
+                    
+                    // After successfully resuming, clear the URL to prevent re-triggering on reload.
+                    window.history.replaceState({}, document.title, window.location.pathname);
 
                 } else {
                     throw new Error('Invalid session data or lastTimestamp missing.');
                 }
             } catch (error) {
                 console.error('Resume failed:', error);
-                // Display a styled, on-page error instead of a JS alert.
+                // Display the styled error view.
                 this.renderErrorView(
-                    this.translate('error_resume_failed_title'), 
+                    this.translate('error_resume_failed_title'),
                     this.translate('error_resume_failed_message')
                 );
+                // Clear the bad params from the URL on failure.
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         }
@@ -398,13 +416,22 @@
             });
         }
         
+        /**
+         * Returns a minimal, serializable version of the state for backend logging.
+         */
         getSerializableState() {
-            const { ytPlayer, videoPlayStartTime, ...stateToSave } = this.state;
-            return stateToSave;
+            return {
+                sessionId: this.state.sessionId,
+                currentSection: this.state.currentSection,
+                userIdentifier: this.state.userIdentifier,
+                language: this.state.language
+            };
         }
 
         saveState() {
-            sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.getSerializableState()));
+            // Save the full state to session storage for client-side persistence
+            const { ytPlayer, videoPlayStartTime, ...stateToSave } = this.state;
+            sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(stateToSave));
         }
 
         clearStateAndReset() {
@@ -437,7 +464,7 @@
             if (viewName === 'video') this.setupVideoView(data);
             if (viewName === 'signature') this.setupSignatureView();
             if (viewName === 'paused') {
-                // Generate the resume link with sessionId and videoSection, per the new logic.
+                // Generate the resume link with sessionId and videoSection from the current state.
                 const resumeUrl = `${window.location.origin}${window.location.pathname}?sessionId=${this.state.sessionId}&videoSection=${this.state.currentSection}`;
                 const resumeLinkInput = document.getElementById('resume-link-input');
                 if (resumeLinkInput) resumeLinkInput.value = resumeUrl;
@@ -610,11 +637,8 @@
             if (!isBackgroundTask) {
                 this.renderView('loading', { messageKey: payload.response === 'start' ? 'loadingVideos' : 'loadingText' });
             }
-            const requestBody = { ...this.state, ...payload, timestamp: new Date().toISOString(), lastActivity: new Date().toISOString() };
-            delete requestBody.ytPlayer;
-            delete requestBody.videoPlayStartTime;
-            delete requestBody.view;
-
+            const requestBody = { ...this.getSerializableState(), ...payload, timestamp: new Date().toISOString(), lastActivity: new Date().toISOString() };
+            
             try {
                 const response = await fetch(this.config.webhookUrl, {
                     method: 'POST',
@@ -641,15 +665,13 @@
             const currentTime = player && typeof player.getCurrentTime === 'function' ? Math.floor(player.getCurrentTime()) : 0;
             const videoInfo = this.videos[this.state.currentSection];
             const requestBody = { 
-                ...this.state, ...payload, 
+                ...this.getSerializableState(), ...payload, 
                 videoWatchedDuration: currentTime,
                 videoTitle: videoInfo.title,
                 startTime: this.state.videoPlayStartTime ? new Date(this.state.videoPlayStartTime).toISOString() : null,
                 timestamp: new Date().toISOString()
             };
-            delete requestBody.ytPlayer;
-            delete requestBody.videoPlayStartTime;
-            delete requestBody.view;
+
             fetch(this.config.webhookUrl, {
                 method: 'POST', mode: 'cors',
                 headers: { 'Content-Type': 'application/json' },
