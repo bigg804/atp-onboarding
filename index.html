@@ -389,7 +389,7 @@
         }
         
         loadStateAndRender() {
-            const savedState = sessionStorage.getItem(this.STORAGE_KEY);
+            const savedState = localStorage.getItem(this.STORAGE_KEY);
             const defaultState = {
                 sessionId: this.generateSessionId(),
                 userIdentifier: '',
@@ -429,13 +429,13 @@
         }
 
         saveState() {
-            // Save the full state to session storage for client-side persistence
+            // Save the full state to local storage for client-side persistence
             const { ytPlayer, videoPlayStartTime, ...stateToSave } = this.state;
-            sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(stateToSave));
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(stateToSave));
         }
 
         clearStateAndReset() {
-            sessionStorage.removeItem(this.STORAGE_KEY);
+            localStorage.removeItem(this.STORAGE_KEY);
             window.history.replaceState({}, document.title, window.location.pathname);
             this.loadStateAndRender();
         }
