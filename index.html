@@ -116,8 +116,8 @@
             <h2 class="text-2xl font-bold text-slate-800 mb-2" data-translate="pausedTitle">Session Paused</h2>
             <p class="text-slate-600 mb-6" data-translate="pausedMessage">Your progress has been saved. A team member will contact you shortly to answer your question. You can close this window.</p>
             <div class="bg-slate-100 p-4 rounded-lg">
-                <p class="text-sm text-slate-600" data-translate="pausedSessionId">Your Session ID is:</p>
-                <p id="paused-session-id" class="font-mono text-lg text-slate-800 break-all"></p>
+                <p class="text-sm text-slate-600" data-translate="pausedResumeLink">Use this link to resume later:</p>
+                <input id="resume-link-input" type="text" readonly class="w-full mt-2 p-2 font-mono text-sm bg-slate-200 border-slate-300 rounded text-center">
             </div>
         </div>
     </template>
@@ -182,7 +182,6 @@
         </div>
     </template>
     
-    <!-- Modal for asking a question -->
     <template id="question-modal-view">
         <div id="question-modal-overlay" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
             <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg animate-fadeIn">
@@ -211,8 +210,7 @@
             // --- APP CONFIGURATION ---
             this.config = {
                 webhookUrl: 'https://bigg804.app.n8n.cloud/webhook/video-onboarding',
-                // NOTE: You'll need to create this new endpoint in your n8n workflow
-                resumeUrl: 'https://bigg804.app.n8n.cloud/webhook/resume-onboarding', 
+                resumeUrl: 'https://bigg804.app.n8n.cloud/webhook/resume-onboarding',
                 totalVideos: 6
             };
 
@@ -240,7 +238,7 @@
                     submitQuestionButton: 'Submit Question',
                     pausedTitle: 'Session Paused',
                     pausedMessage: 'Your progress has been saved. A team member will contact you shortly to answer your question. You can close this window.',
-                    pausedSessionId: 'Your Session ID is:',
+                    pausedResumeLink: 'Use this link to resume later:',
                     signatureTitle: 'Final Step: Your Signature', signatureMessage: 'Please provide your signature to complete onboarding.',
                     printedNameLabel: 'Printed Name', drawSignature: 'Draw Your Signature Below', clearButton: 'Clear',
                     agreementText: 'By clicking "Submit", I acknowledge I have watched all videos and agree to the terms presented.',
@@ -250,8 +248,8 @@
                     alert_enter_name: 'Please enter your printed name.', alert_provide_signature: 'Please provide a signature.', alert_provide_id: 'Please provide your Name or ID.',
                     alert_enter_question: 'Please enter your question.',
                     alert_network_error: 'Network communication failed. Please try again.', alert_server_error: 'An invalid response was received from the server. Please try again.',
-                    alert_json_error: 'Could not process server response. Please check backend format.',
-                    alert_resume_failed: 'Could not resume your session. Please start over.',
+                    error_resume_failed_title: 'Resume Failed',
+                    error_resume_failed_message: "Couldn’t resume your session, please try again."
                 },
                 es: {
                     appTitle: 'Portal de Incorporación', appSubtitle: 'Por favor complete todos los pasos',
@@ -267,7 +265,7 @@
                     submitQuestionButton: 'Enviar Pregunta',
                     pausedTitle: 'Sesión en Pausa',
                     pausedMessage: 'Su progreso ha sido guardado. Un miembro del equipo se comunicará con usted en breve para responder a su pregunta. Puede cerrar esta ventana.',
-                    pausedSessionId: 'Su ID de sesión es:',
+                    pausedResumeLink: 'Use este enlace para reanudar más tarde:',
                     signatureTitle: 'Paso Final: Su Firma', signatureMessage: 'Proporcione su firma para completar la incorporación.',
                     printedNameLabel: 'Nombre en Imprenta', drawSignature: 'Dibuje su Firma Abajo', clearButton: 'Limpiar',
                     agreementText: 'Al hacer clic en "Enviar", reconozco que he visto todos los videos y acepto los términos presentados.',
@@ -277,8 +275,8 @@
                     alert_enter_name: 'Por favor, ingrese su nombre en imprenta.', alert_provide_signature: 'Por favor, proporcione una firma.', alert_provide_id: 'Por favor, ingrese su Nombre o ID.',
                     alert_enter_question: 'Por favor, ingrese su pregunta.',
                     alert_network_error: 'La comunicación de red falló. Por favor, inténtelo de nuevo.', alert_server_error: 'Se recibió una respuesta no válida del servidor. Por favor, inténtelo de nuevo.',
-                    alert_json_error: 'No se pudo procesar la respuesta del servidor. Verifique el formato del backend.',
-                    alert_resume_failed: 'No se pudo reanudar su sesión. Por favor, empiece de nuevo.',
+                    error_resume_failed_title: 'Fallo al Reanudar',
+                    error_resume_failed_message: "No se pudo reanudar su sesión. Por favor, empiece de nuevo."
                 }
             };
             
@@ -286,17 +284,76 @@
         }
 
         /**
-         * Initializes the application.
+         * Initializes the application, checking for a session to resume.
          */
         async init() {
             this.setupGlobalListeners();
             const urlParams = new URLSearchParams(window.location.search);
             const resumeSessionId = urlParams.get('sessionId');
+            const resumeVideoSection = urlParams.get('videoSection');
 
-            if (resumeSessionId) {
-                await this.resumeSession(resumeSessionId);
+            if (resumeSessionId && resumeVideoSection) {
+                await this.resumeSession(resumeSessionId, parseInt(resumeVideoSection, 10));
             } else {
                 this.loadStateAndRender();
+            }
+        }
+
+        /**
+         * Fetches a session state from the backend to resume using a composite key.
+         * @param {string} sessionId - The ID of the session to fetch.
+         * @param {number} videoSection - The video section number to resume.
+         */
+        async resumeSession(sessionId, videoSection) {
+            this.renderView('loading', { messageKey: 'resumingSession' });
+            const compositeKey = `${sessionId}:${videoSection}`;
+            try {
+                // Per instructions, GET from the resume endpoint using the composite key.
+                const response = await fetch(`${this.config.resumeUrl}?compositeKey=${compositeKey}`);
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                const sessionData = Array.isArray(data) ? data[0]?.json : data.json || data;
+
+                // The primary requirement is to find `lastTimestamp` in the response.
+                if (sessionData && typeof sessionData.lastTimestamp !== 'undefined') {
+                    const lastTimestamp = sessionData.lastTimestamp || 0;
+
+                    this.state = {
+                        sessionId: sessionId,
+                        userIdentifier: sessionData.userIdentifier || '',
+                        currentSection: videoSection,
+                        language: sessionData.language || 'en',
+                        status: 'resumed',
+                        view: 'video'
+                    };
+                    this.saveState();
+
+                    // Load the correct section and seek to the retrieved timestamp.
+                    this.renderView('video', { 
+                        section: videoSection,
+                        startTime: lastTimestamp 
+                    });
+
+                    // Notify the backend that the session is now active again.
+                    this.sendRequest({
+                        response: 'resume',
+                        status: 'in-progress'
+                    }, true); // Fire-and-forget
+
+                } else {
+                    throw new Error('Invalid session data or lastTimestamp missing.');
+                }
+            } catch (error) {
+                console.error('Resume failed:', error);
+                // Display a styled, on-page error instead of a JS alert.
+                this.renderErrorView(
+                    this.translate('error_resume_failed_title'), 
+                    this.translate('error_resume_failed_message')
+                );
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
         }
 
@@ -307,16 +364,12 @@
             this.appContainer.addEventListener('click', (e) => this.handleAction(e));
             document.getElementById('lang-en').addEventListener('click', () => this.setLanguage('en'));
             document.getElementById('lang-es').addEventListener('click', () => this.setLanguage('es'));
-            // Debounced resize handler for the signature canvas
             window.addEventListener('resize', () => {
                 if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
                 this.resizeTimeout = setTimeout(() => this.resizeSignatureCanvas(), 250);
             });
         }
         
-        /**
-         * Loads state from sessionStorage or initializes a default state, then renders the correct view.
-         */
         loadStateAndRender() {
             const savedState = sessionStorage.getItem(this.STORAGE_KEY);
             const defaultState = {
@@ -327,72 +380,13 @@
                 status: 'new',
                 view: 'identification',
             };
-
             this.state = savedState ? { ...defaultState, ...JSON.parse(savedState) } : defaultState;
-            
-            // Initialize non-serializable properties.
             this.state.ytPlayer = null;
             this.state.videoPlayStartTime = null;
-
             this.setLanguage(this.state.language, false);
-            this.renderView(this.state.view, { 
-                section: this.state.currentSection,
-            });
+            this.renderView(this.state.view, { section: this.state.currentSection });
         }
 
-        /**
-         * Fetches a saved session state from the backend to resume.
-         */
-        async resumeSession(sessionId) {
-            this.renderView('loading', { messageKey: 'resumingSession' });
-            try {
-                const response = await fetch(`${this.config.resumeUrl}?sessionId=${sessionId}`);
-                if (!response.ok) throw new Error('Failed to fetch session data.');
-
-                const data = await response.json();
-                
-                if (data && data.success) {
-                    // Handle both response formats
-                    const responseData = data.data || data;
-                    const section = responseData.section ?? responseData.currentSection;
-
-                    if (typeof section !== 'undefined') {
-                        const sectionNumber = parseInt(section, 10);
-                        // Ensure startTime is available for the video, default to 0
-                        const startTime = this.videos[sectionNumber]?.startTime || 0;
-                        this.state = {
-                            sessionId: sessionId,
-                            userIdentifier: responseData.userIdentifier || data.userIdentifier,
-                            currentSection: sectionNumber,
-                            language: responseData.language || data.language || 'en',
-                            status: 'resumed',
-                            view: 'video'
-                        };
-                        this.saveState();
-                        
-                        this.renderView('video', { 
-                            section: this.state.currentSection,
-                            startTime: startTime
-                        });
-                    } else {
-                        throw new Error('Invalid session data: missing section information');
-                    }
-                } else {
-                    throw new Error(data?.error || 'Invalid session data received.');
-                }
-
-            } catch (error) {
-                console.error('Resume failed:', error);
-                this.showToast('error', this.translate('alert_resume_failed'));
-                // Clear bad query param and start fresh
-                window.history.replaceState({}, document.title, window.location.pathname);
-                this.loadStateAndRender();
-            }
-        }
-
-        /**
-         * Generates a unique session ID.
-         */
         generateSessionId() {
             if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                 return crypto.randomUUID();
@@ -404,33 +398,21 @@
             });
         }
         
-        /**
-         * Prepares a serializable version of the state for storage.
-         */
         getSerializableState() {
             const { ytPlayer, videoPlayStartTime, ...stateToSave } = this.state;
             return stateToSave;
         }
 
-        /**
-         * Saves the current application state to sessionStorage.
-         */
         saveState() {
             sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.getSerializableState()));
         }
 
-        /**
-         * Clears the session state and resets the application to the initial view.
-         */
         clearStateAndReset() {
             sessionStorage.removeItem(this.STORAGE_KEY);
             window.history.replaceState({}, document.title, window.location.pathname);
             this.loadStateAndRender();
         }
         
-        /**
-         * Renders a specific view into the app container using a template.
-         */
         renderView(viewName, data = {}) {
              this.state.view = viewName;
              if (this.state.ytPlayer && typeof this.state.ytPlayer.destroy === 'function') {
@@ -443,156 +425,118 @@
                 return;
             }
             
-            // Clear previous view and render new one
             this.appContainer.innerHTML = '';
             const viewFragment = template.content.cloneNode(true);
             const viewElement = viewFragment.querySelector('.view');
             
             this.appContainer.appendChild(viewFragment);
             
-            // Post-render setup
             if (viewElement) viewElement.classList.add('active');
             this.updateAllUIText();
 
-            // Call specific setup functions for complex views.
             if (viewName === 'video') this.setupVideoView(data);
             if (viewName === 'signature') this.setupSignatureView();
             if (viewName === 'paused') {
-                document.getElementById('paused-session-id').textContent = this.state.sessionId;
+                // Generate the resume link with sessionId and videoSection, per the new logic.
+                const resumeUrl = `${window.location.origin}${window.location.pathname}?sessionId=${this.state.sessionId}&videoSection=${this.state.currentSection}`;
+                const resumeLinkInput = document.getElementById('resume-link-input');
+                if (resumeLinkInput) resumeLinkInput.value = resumeUrl;
             }
             if (viewName === 'loading') {
                  document.getElementById('loading-text').textContent = this.translate(data.messageKey || 'loadingText');
             }
         }
 
-        /**
-         * Renders a generic error view.
-         */
         renderErrorView(title, message) {
             this.renderView('error');
             document.getElementById('error-title').textContent = title;
             document.getElementById('error-message').textContent = message;
-            document.getElementById('retry-btn').onclick = () => window.location.reload();
+            document.getElementById('retry-btn').onclick = () => {
+                // On retry, clear the bad URL params and start over.
+                window.history.replaceState({}, document.title, window.location.pathname);
+                window.location.reload();
+            };
         }
 
-        /**
-         * Sets up the video view with the correct video, title, and progress.
-         */
         setupVideoView(data) {
             if (data.section === undefined || data.section < 0 || data.section >= this.videos.length) {
                 this.renderView('signature');
                 return;
             }
             this.state.currentSection = data.section;
-            this.state.videoPlayStartTime = null; // Reset start time for the new video
+            this.state.videoPlayStartTime = null;
             const video = this.videos[data.section];
-            const completionPercentage = Math.round(((data.section) / this.config.totalVideos) * 100)
+            const completionPercentage = Math.round(((data.section) / this.config.totalVideos) * 100);
             
             document.getElementById('video-title').textContent = video.title;
             document.getElementById('step-counter').textContent = this.translate('stepCounterText', { 1: data.section + 1, 2: this.config.totalVideos });
             document.getElementById('progress-bar').style.width = `${completionPercentage}%`;
             
-            this.loadYouTubePlayer(video.videoId);
+            this.loadYouTubePlayer(video.videoId, data.startTime);
         }
         
-        /**
-         * Initializes the signature pad.
-         */
         setupSignatureView() {
             const canvas = document.getElementById('signature-canvas');
-            this.signaturePad = new SignaturePad(canvas, {
-                penColor: 'rgb(0, 0, 0)'
-            });
-            this.resizeSignatureCanvas(); // Initial resize to fix coordinates
-
-            // Prefill printed name if available
+            this.signaturePad = new SignaturePad(canvas, { penColor: 'rgb(0, 0, 0)' });
+            this.resizeSignatureCanvas();
             const printedNameInput = document.getElementById('printed-name-input');
             if(this.state.userIdentifier) printedNameInput.value = this.state.userIdentifier;
         }
 
-        /**
-         * Correctly resizes the signature canvas to match its display size,
-         * preventing coordinate mismatches and preserving the drawing.
-         */
         resizeSignatureCanvas() {
             if (!this.signaturePad) return;
             const canvas = this.signaturePad.canvas;
-            const data = this.signaturePad.toData(); // Save signature data
-            
+            const data = this.signaturePad.toData();
             const ratio =  Math.max(window.devicePixelRatio || 1, 1);
             canvas.width = canvas.offsetWidth * ratio;
             canvas.height = canvas.offsetHeight * ratio;
             canvas.getContext("2d").scale(ratio, ratio);
-            
-            this.signaturePad.fromData(data); // Restore signature data
+            this.signaturePad.fromData(data);
         }
 
-        /**
-         * Shows the modal for the user to ask a question.
-         */
         showQuestionModal() {
             if (document.getElementById('question-modal-overlay')) return;
-
             const template = document.getElementById('question-modal-view');
             const modalFragment = template.content.cloneNode(true);
             const modal = modalFragment.querySelector('#question-modal-overlay');
-            
-            // Translate elements within the modal before appending
             modal.querySelectorAll('[data-translate]').forEach(el => el.textContent = this.translate(el.dataset.translate));
             const textarea = modal.querySelector('#question-textarea');
             textarea.placeholder = this.translate('questionPlaceholder');
-
             modal.querySelector('#submit-question-btn').addEventListener('click', () => this.submitQuestion());
             modal.querySelector('#cancel-question-btn').addEventListener('click', () => this.closeQuestionModal());
-
             document.body.appendChild(modalFragment);
             textarea.focus();
         }
         
-        /**
-         * Closes and removes the question modal from the DOM.
-         */
         closeQuestionModal() {
             const modal = document.getElementById('question-modal-overlay');
             if (modal) modal.remove();
         }
 
-        /**
-         * Handles the submission of the question form.
-         */
         submitQuestion() {
             const textarea = document.getElementById('question-textarea');
             const questionText = textarea.value.trim();
-
             if (!questionText) {
                 this.showToast('error', this.translate('alert_enter_question'));
                 return;
             }
-
+            const player = this.state.ytPlayer;
+            const currentTime = player && typeof player.getCurrentTime === 'function' ? Math.floor(player.getCurrentTime()) : 0;
             const videoInfo = this.videos[this.state.currentSection];
-            const duration = this.state.videoPlayStartTime ? Math.round((Date.now() - this.state.videoPlayStartTime) / 1000) : 0;
-            const baseUrl = window.location.origin + window.location.pathname;
-
             this.sendRequest({
                 response: 'disagree',
                 status: 'paused',
                 videoTitle: videoInfo.title,
-                videoWatchedDuration: duration,
+                videoWatchedDuration: currentTime,
                 startTime: this.state.videoPlayStartTime ? new Date(this.state.videoPlayStartTime).toISOString() : null,
-                userQuestion: questionText,
-                resumeUrl: `${baseUrl}?sessionId=${this.state.sessionId}`
+                userQuestion: questionText
             });
-
             this.closeQuestionModal();
         }
 
-        /**
-         * Handles all button clicks within the app.
-         */
         handleAction(e) {
             const button = e.target.closest('button');
             if (!button || button.disabled) return;
-            
             const actionMap = {
                 'start-btn': this.startOnboarding,
                 'agree-btn': this.handleAgreement,
@@ -609,11 +553,7 @@
             }
         }
         
-        /**
-         * Skips the current video for development purposes.
-         */
         skipVideo() {
-            console.log("DEV: Skipping video");
             if (this.state.ytPlayer && typeof this.state.ytPlayer.stopVideo === 'function') {
                 this.state.ytPlayer.stopVideo();
             }
@@ -634,31 +574,16 @@
             this.sendRequest({ response: 'start', status: 'started' });
         }
         
-        /**
-         * Handles video agreement with an optimistic update.
-         * The UI advances immediately, and the data is logged to the server in the background.
-         */
         handleAgreement() {
-            // Log data to the server without waiting for a response
-            this.logToServer({
-                response: 'agree',
-                status: 'in-progress',
-            });
-
-            // Optimistically update the UI
+            this.logToServer({ response: 'agree', status: 'in-progress' });
             const nextSection = this.state.currentSection + 1;
-            
             this.state.status = 'in-progress';
             this.state.currentSection = nextSection;
             this.saveState();
-
             if (nextSection >= this.config.totalVideos) {
                 this.renderView('signature');
             } else {
-                this.renderView('video', { 
-                    section: nextSection,
-                    startTime: 0
-                });
+                this.renderView('video', { section: nextSection, startTime: 0 });
             }
         }
         
@@ -672,7 +597,6 @@
                 this.showToast('error', this.translate('alert_provide_signature'));
                 return;
             }
-
             const signatureImage = this.signaturePad.toDataURL('image/png');
             this.sendRequest({
                 response: 'submit_signature',
@@ -682,20 +606,14 @@
             });
         }
         
-        /**
-         * Sends a request to the server and waits for a response to update the UI.
-         * Used for critical actions like start, pause, and submit.
-         */
-        async sendRequest(payload) {
-            this.renderView('loading', { messageKey: payload.response === 'start' ? 'loadingVideos' : 'loadingText' });
-            
-            const requestBody = { ...this.state, ...payload, timestamp: new Date().toISOString() };
-            // Clean up non-serializable properties before sending
+        async sendRequest(payload, isBackgroundTask = false) {
+            if (!isBackgroundTask) {
+                this.renderView('loading', { messageKey: payload.response === 'start' ? 'loadingVideos' : 'loadingText' });
+            }
+            const requestBody = { ...this.state, ...payload, timestamp: new Date().toISOString(), lastActivity: new Date().toISOString() };
             delete requestBody.ytPlayer;
             delete requestBody.videoPlayStartTime;
             delete requestBody.view;
-
-            console.log('Sending request and awaiting response:', requestBody);
 
             try {
                 const response = await fetch(this.config.webhookUrl, {
@@ -704,112 +622,70 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(requestBody),
                 });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Backend returned an error:', response.status, errorText);
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                if (!isBackgroundTask) {
+                    const data = await response.json();
+                    this.handleApiResponse(data, payload.status);
                 }
-                
-                const data = await response.json();
-                this.handleApiResponse(data, payload.status);
-
             } catch (error) {
                 console.error("API Request Failed:", error);
-                this.showToast('error', this.translate('alert_network_error'));
-                this.loadStateAndRender(); 
+                if (!isBackgroundTask) {
+                    this.showToast('error', this.translate('alert_network_error'));
+                    this.loadStateAndRender(); 
+                }
             }
         }
         
-        /**
-         * Logs data to the server without waiting for a response.
-         * Used for non-critical background updates like video agreements.
-         */
-        async logToServer(payload) {
-            const duration = this.state.videoPlayStartTime ? Math.round((Date.now() - this.state.videoPlayStartTime) / 1000) : 0;
+        logToServer(payload) {
+            const player = this.state.ytPlayer;
+            const currentTime = player && typeof player.getCurrentTime === 'function' ? Math.floor(player.getCurrentTime()) : 0;
             const videoInfo = this.videos[this.state.currentSection];
-
             const requestBody = { 
-                ...this.state, 
-                ...payload, 
-                videoWatchedDuration: duration,
+                ...this.state, ...payload, 
+                videoWatchedDuration: currentTime,
                 videoTitle: videoInfo.title,
                 startTime: this.state.videoPlayStartTime ? new Date(this.state.videoPlayStartTime).toISOString() : null,
                 timestamp: new Date().toISOString()
             };
-            
             delete requestBody.ytPlayer;
             delete requestBody.videoPlayStartTime;
             delete requestBody.view;
-
-            console.log('Logging to server (fire and forget):', requestBody);
-            
-            try {
-                const response = await fetch(this.config.webhookUrl, {
-                    method: 'POST',
-                    mode: 'cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody),
-                });
-                 if (!response.ok) {
-                    console.error('Background logging failed:', response.status, await response.text());
-                }
-            } catch (error) {
-                console.error("Background logging request failed:", error);
-            }
+            fetch(this.config.webhookUrl, {
+                method: 'POST', mode: 'cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody),
+            }).catch(error => console.error("Background logging request failed:", error));
         }
 
-        /**
-         * Handles the response from the n8n webhook for critical actions.
-         */
         handleApiResponse(response, status) {
             let responseObject = Array.isArray(response) ? response[0] : (response.json || response);
-            
-             if (responseObject && responseObject.json) responseObject = responseObject.json;
-             if (responseObject && responseObject.data) responseObject = {...responseObject, ...responseObject.data};
-
+            if (responseObject && responseObject.json) responseObject = responseObject.json;
+            if (responseObject && responseObject.data) responseObject = {...responseObject, ...responseObject.data};
             if (!responseObject || (responseObject.success === false)) {
                 this.showToast('error', responseObject.error || this.translate('alert_server_error'));
                 this.loadStateAndRender();
                 return;
             }
-            
             const { action } = responseObject;
             const serverSection = responseObject.nextSection ?? responseObject.section;
-            
             if (typeof serverSection !== 'undefined') {
                  this.state.currentSection = serverSection;
             }
-            
             this.state.status = status || this.state.status;
             this.saveState();
-
             switch (action) {
-                case 'next_video':
-                    this.renderView('video', { section: this.state.currentSection });
-                    break;
-                case 'request_signature':
-                    this.renderView('signature');
-                    break;
-                case 'onboarding_complete':
-                    this.renderView('completion');
-                    break;
+                case 'next_video': this.renderView('video', { section: this.state.currentSection }); break;
+                case 'request_signature': this.renderView('signature'); break;
+                case 'onboarding_complete': this.renderView('completion'); break;
                 case 'disagreement_logged':
-                case 'session_paused':
-                    this.renderView('paused');
-                    break;
+                case 'session_paused': this.renderView('paused'); break;
                 default:
                     console.error('Unhandled action from server:', action, responseObject);
-                    this.showToast('error', this.translate('alert_server_error'));
                     this.loadStateAndRender();
             }
         }
 
-
-        /**
-         * Loads the YouTube player.
-         */
-        loadYouTubePlayer(videoId) {
+        loadYouTubePlayer(videoId, startTime = 0) {
             if (!window.YT) {
                  this.renderErrorView('Player Error', 'The YouTube player script could not be loaded.');
                  return;
@@ -817,7 +693,12 @@
             try {
                 this.state.ytPlayer = new YT.Player('video-player', {
                     videoId,
-                    playerVars: { 'playsinline': 1, 'autoplay': 1, 'controls': 0, 'rel': 0, 'modestbranding': 1, 'showinfo': 0, 'origin': window.location.origin },
+                    playerVars: { 
+                        'playsinline': 1, 'autoplay': 1, 'controls': 0, 
+                        'rel': 0, 'modestbranding': 1, 'showinfo': 0, 
+                        'origin': window.location.origin,
+                        'start': startTime
+                    },
                     events: {
                         'onReady': e => e.target.playVideo(),
                         'onStateChange': e => {
@@ -829,19 +710,13 @@
                                 document.getElementById('action-buttons').classList.add('animate-pulse');
                             }
                         },
-                        'onError': e => {
-                            console.error('YouTube player error:', e.data);
-                            this.showToast('error', 'Video failed to load. Please refresh.');
-                        }
+                        'onError': e => console.error('YouTube player error:', e.data)
                     }
                 });
             } catch (error) {
                 console.error('Failed to initialize YouTube player:', error);
-                this.showToast('error', 'Video player could not be initialized.');
             }
         }
-        
-        // --- UI & TRANSLATION METHODS ---
         
         translate(key, vars = {}) {
             let text = (this.translations[this.state.language]?.[key]) || key;
@@ -867,11 +742,9 @@
             document.querySelectorAll('[data-translate]').forEach(el => {
                 el.textContent = this.translate(el.dataset.translate);
             });
-            // Update placeholders separately
             document.querySelectorAll('[data-translate-placeholder]').forEach(el => {
                 el.placeholder = this.translate(el.dataset.translatePlaceholder);
             });
-
             if (this.state.view === 'video') {
                 document.getElementById('step-counter').textContent = this.translate('stepCounterText', { 1: this.state.currentSection + 1, 2: this.config.totalVideos });
             }
